@@ -1,6 +1,6 @@
 <?php		
 	header('Content-type: application/vnd.ms-excel');
-	header("Content-Disposition: attachment; filename=stats-".$_GET['type']."-".$_GET["start_date"]."-".$_GET["final_date"].".xls");
+	header("Content-Disposition: attachment; filename=stats-".$_GET['type']."-$start_date'-$final_date'.xls");
 	header("Pragma: no-cache");
 	header("Expires: 0");
 		
@@ -8,12 +8,24 @@
 		
 	$type = $_GET['type'];	
 	global $wpdb;
+	$activity_tablename = $wpdb->prefix . 'bp_activity';
+	$blogs_tablename = $wpdb->prefix . 'blogs';
+	$comments_tablename = $wpdb->prefix . 'comments';
+	$groups_tablename = $wpdb->prefix . 'bp_groups';
+	$groups_members_tablename = $wpdb->prefix . 'bp_groups_members';
+	$posts_tablename = $wpdb->prefix . 'posts';
+	$options_tablename = $wpdb->prefix . 'options';
+	$users_tablename = $wpdb->prefix . 'users';
+	$usermeta_tablename = $wpdb->prefix . 'usermeta';
+	$users_tablename = $wpdb->prefix . 'users';
+	$start_date = sanitize_text_field( $_GET['start_date'] );
+	$final_date = sanitize_text_field( $_GET['final_date'] );
 	switch($type){
 		case 'activity':								
 			$sql = "
-				SELECT COUNT(type) as publications, wp_users.display_name, wp_users.user_email, wp_users.user_registered, MAX(wp_bp_activity.date_recorded) AS lastest
-				FROM wp_bp_activity, wp_users
-				WHERE wp_users.ID = wp_bp_activity.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
+				SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest
+				FROM $activity_tablename, $users_tablename
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 				GROUP BY(user_id)
 				ORDER BY (publications) DESC
 			";        				        
@@ -22,7 +34,7 @@
 			
 			if($response){			
 				$html = "				
-				<h4>Results found on <span class='component'>$type</span> component between <strong>".$_GET["start_date"]."</strong> and <strong>".$_GET["final_date"]."</strong></h4>								
+				<h4>Results found on <span class='component'>$type</span> component between <strong>$start_date</strong> and <strong>$final_date</strong></h4>								
 				<table border='1'>
 					<thead>
 						<tr>
@@ -42,7 +54,7 @@
 						<td  align='center'>$rs->publications</td>
 						<td>$rs->user_email</td>
 						<td>".normalize_datesXLS($rs->user_registered)."</td>
-						<td>".normalize_datesXLS($rs->lastest)."</td>					
+						<td>".normalize_datesXLS($rs->latest)."</td>					
 					</tr>";											
 				}																																		
 			}
@@ -50,12 +62,12 @@
 		
 		case 'groups':
 			$sql = "
-				SELECT COUNT(type) as publications, wp_users.display_name, wp_users.user_email, wp_users.user_registered, MAX(wp_bp_activity.date_recorded) AS lastest,
-				(SELECT COUNT(wp_bp_groups_members.user_id) FROM wp_bp_groups_members, wp_users u2 WHERE u2.ID = wp_bp_groups_members.user_id and u2.ID = wp_users.ID ) as groups									
-				FROM wp_bp_activity, wp_users			
-				WHERE wp_users.ID = wp_bp_activity.user_id AND component = 'groups' AND type = 'activity_update' 
-				AND date_recorded BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
-				GROUP BY wp_bp_activity.user_id
+				SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest,
+				(SELECT COUNT($groups_members_tablename.user_id) FROM $groups_members_tablename, $users_tablename u2 WHERE u2.ID = $groups_members_tablename.user_id and u2.ID = $users_tablename.ID ) as groups									
+				FROM $activity_tablename, $users_tablename			
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' 
+				AND date_recorded BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
+				GROUP BY $activity_tablename.user_id
 				ORDER BY (publications) DESC
 			"; 					       			        
 			
@@ -64,7 +76,7 @@
 			
 			if($response){					        																					
 				$html = "
-				<h4>Results found on <span class='component'>$type</span> component between <strong>".$_GET["start_date"]."</strong> and <strong>".$_GET["final_date"]."</strong></h4>								
+				<h4>Results found on <span class='component'>$type</span> component between <strong>$start_date</strong> and <strong>$final_date</strong></h4>								
 				<table border='1'>
 					<thead>
 						<tr>					
@@ -87,7 +99,7 @@
 						<td align='center'>$rs->publications</td>
 						<td>$rs->user_email</td>
 						<td>".normalize_datesXLS($rs->user_registered)."</td>
-						<td>".normalize_datesXLS($rs->lastest)."</td>					
+						<td>".normalize_datesXLS($rs->latest)."</td>					
 					</tr>";															
 				}								
 			}
@@ -95,18 +107,18 @@
 		
 		case 'forums' :
 			$sql = "
-				SELECT COUNT(type) as publications, wp_users.display_name, wp_users.user_email, wp_users.user_registered, MAX(wp_bp_activity.date_recorded) AS lastest									
-				FROM wp_bp_activity, wp_users			
-				WHERE wp_users.ID = wp_bp_activity.user_id AND component = 'groups' AND (type = 'new_forum_topic' OR type = 'new_forum_post')
-				AND date_recorded BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
-				GROUP BY wp_bp_activity.user_id
+				SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest									
+				FROM $activity_tablename, $users_tablename
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply')
+				AND date_recorded BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
+				GROUP BY $activity_tablename.user_id
 				ORDER BY (publications) DESC
 			"; 								   			
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);								        			
 			if($response){						
 				$html = $css."
-				<h4>Results found on <span class='component'>$type</span> component between <strong>".$_GET["start_date"]."</strong> and <strong>".$_GET["final_date"]."</strong></h4>								
+				<h4>Results found on <span class='component'>$type</span> component between <strong>$start_date</strong> and <strong>$final_date</strong></h4>								
 				    <table border='1'>
 					<thead>
 						<tr>							
@@ -126,18 +138,18 @@
 						<td align='center'>$rs->publications</td>
 						<td>$rs->user_email</td>
 						<td>".normalize_datesXLS($rs->user_registered)."</td>
-						<td>".normalize_datesXLS($rs->lastest)."</td>										
+						<td>".normalize_datesXLS($rs->latest)."</td>										
 					</tr>";															
 				}																																																																																																			
 			} 
 		break;
 		
 		case 'blogs':
-			$sql = "SELECT blog_id, domain, path, registered, last_updated FROM wp_blogs WHERE last_updated BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'";				   				        	$response = $wpdb->get_results($sql);
-			$records = sizeof($response);								        			
-			if($response){													
+			$sql = "SELECT blog_id, domain, path, registered, last_updated FROM $blogs_tablename WHERE last_updated BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'";		$response = $wpdb->get_results($sql);
+			$records = sizeof($response);				        			
+			if($response){					
 				$html = $css."
-				<h4>Results found on <span class='component'>$type</span> component between <strong>".$_GET["start_date"]."</strong> and <strong>".$_GET["final_date"]."</strong></h4>
+				<h4>Results found on <span class='component'>$type</span> component between <strong>$start_date</strong> and <strong>$final_date</strong></h4>
 				<table border='1'>
 					<thead>
 						<tr>
@@ -153,14 +165,17 @@
 				foreach ($response as $rs) {																																																																			
 					$url = 'http://'.$rs->domain.$rs->path;						
 					if($rs->blog_id != 1) {								
+						$rs_blog_options_tablename = $wpdb->prefix . $rs->blog_id . '_options';
+						$rs_blog_posts_tablename = $wpdb->prefix . $rs->blog_id . '_posts';
+						$rs_blog_comments_tablename = $wpdb->prefix . $rs->blog_id . '_comments';
 						$subsql = 
 						"
-							SELECT COUNT(wp_".$rs->blog_id."_comments.comment_ID) as comments, wp_".$rs->blog_id."_options.option_value as blogname, 
-							(SELECT COUNT(wp_".$rs->blog_id."_posts.post_type) FROM wp_".$rs->blog_id."_posts 
-							WHERE wp_".$rs->blog_id."_posts.post_type = 'post' AND wp_".$rs->blog_id."_posts.post_status = 'publish' 
-							AND wp_".$rs->blog_id."_posts.post_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59') as articles
-							FROM wp_".$rs->blog_id."_options, wp_".$rs->blog_id."_comments 
-							WHERE wp_".$rs->blog_id."_options.option_name = 'blogname' AND wp_".$rs->blog_id."_comments.comment_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
+							SELECT COUNT($rs_blog_comments_tablename.comment_ID) as comments, $rs_blog_options_tablename.option_value as blogname, 
+							(SELECT COUNT($rs_blog_posts_tablename.post_type) FROM $rs_blog_posts_tablename 
+							WHERE $rs_blog_posts_tablename.post_type = 'post' AND $rs_blog_posts_tablename.post_status = 'publish' 
+							AND $rs_blog_posts_tablename.post_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59') as articles
+							FROM $rs_blog_options_tablename, $rs_blog_comments_tablename 
+							WHERE $rs_blog_options_tablename.option_name = 'blogname' AND $rs_blog_comments_tablename.comment_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 							ORDER BY articles DESC								 
 						";
 																														
@@ -180,11 +195,11 @@
 					} else {						
 						$subsql = 
 						"
-							SELECT COUNT(wp_comments.comment_ID) as comments, wp_options.option_value as blogname, 
-							(SELECT COUNT(wp_posts.ID) FROM wp_posts WHERE wp_posts.post_type = 'post' AND wp_posts.post_status = 'publish' 
-							AND wp_posts.post_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59') as articles
-							FROM wp_options, wp_comments 
-							WHERE wp_options.option_name = 'blogname' AND wp_comments.comment_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
+							SELECT COUNT($comments_tablename.comment_ID) as comments, $options_tablename.option_value as blogname, 
+							(SELECT COUNT($posts_tablename.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND $posts_tablename.post_status = 'publish' 
+							AND $posts_tablename.post_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59') as articles
+							FROM $options_tablename, $comments_tablename 
+							WHERE $options_tablename.option_name = 'blogname' AND $comments_tablename.comment_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 							ORDER BY articles DESC	
 						";
 														
@@ -207,12 +222,12 @@
 		break;
 		
 		case 'comments' :			
-			$sql = "SELECT wp_users.ID, wp_users.display_name, wp_users.user_registered, wp_users.user_email FROM wp_users";											
+			$sql = "SELECT $users_tablename.ID, $users_tablename.display_name, $users_tablename.user_registered, $users_tablename.user_email FROM $users_tablename";											
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);								        			
 			if($response){						
 				$html = $css."
-				<h4>Results found on <span class='component'>$type</span> component between <strong>".$_GET["start_date"]."</strong> and <strong>".$_GET["final_date"]."</strong></h4>
+				<h4>Results found on <span class='component'>$type</span> component between <strong>$start_date</strong> and <strong>$final_date</strong></h4>
 				<table border='1'>
 					<thead>
 						<tr>							
@@ -228,26 +243,29 @@
 					$users[$pos]['UserName'] = $rs->display_name;	
 					$users[$pos]['RegisteredDate'] = $rs->user_registered;
 					$users[$pos]['email'] = $rs->user_email;					
-					$sqlblogs = "SELECT blog_id FROM wp_blogs";
+					$sqlblogs = "SELECT blog_id FROM $blogs_tablename";
 					$responseblogs = $wpdb->get_results($sqlblogs); 																	
 					foreach($responseblogs as $rsblog){																																																																		
 							if($rsblog->blog_id != 1) {								
+								$rsb_blog_options_tablename = $wpdb->prefix . $rsblog->blog_id . '_options';
+								$rsb_blog_posts_tablename = $wpdb->prefix . $rsblog->blog_id . '_posts';
+								$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
 								$subsql = "
 									SELECT COUNT(user_id) as comments
-									FROM wp_".$rsblog->blog_id."_comments, wp_users 
-									WHERE wp_".$rsblog->blog_id."_comments.user_id = wp_users.ID 
-									AND wp_users.ID = ".$rs->ID."
-									AND wp_".$rsblog->blog_id."_comments.comment_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
+									FROM $rsb_blog_comment_tablename, $users_tablename 
+									WHERE $rsb_blog_comment_tablename.user_id = $users_tablename.ID 
+									AND $users_tablename.ID = ".$rs->ID."
+									AND $rsb_blog_comment_tablename.comment_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 									ORDER BY comments DESC
 								";																																			
 							} else {						
 								$subsql = 
 								"
 									SELECT COUNT(user_id) as comments
-									FROM wp_users, wp_comments
-									WHERE wp_comments.user_id = wp_users.ID 
-									AND wp_users.ID = ".$rs->ID."
-									AND wp_comments.comment_date BETWEEN '".$_GET["start_date"]." 00:00:00' AND '".$_GET["final_date"]." 23:59:59'
+									FROM $users_tablename, $comments_tablename
+									WHERE $comments_tablename.user_id = $users_tablename.ID 
+									AND $users_tablename.ID = ".$rs->ID."
+									AND $comments_tablename.comment_date BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 									ORDER BY comments DESC
 								";																																				
 							}							
@@ -273,11 +291,11 @@
 		break;		
 		case 'friendship':		
 			$sql = "
-				SELECT wp_users.display_name, wp_users.user_registered, wp_usermeta.meta_value, wp_users.user_email
-				FROM wp_users, wp_usermeta
-				WHERE wp_users.ID = wp_usermeta.user_id
-				AND wp_usermeta.meta_key = 'total_friend_count'
-				ORDER BY wp_usermeta.meta_value DESC					
+				SELECT $users_tablename.display_name, $users_tablename.user_registered, $usermeta_tablename.meta_value, $users_tablename.user_email
+				FROM $users_tablename, $usermeta_tablename
+				WHERE $users_tablename.ID = $usermeta_tablename.user_id
+				AND $usermeta_tablename.meta_key = 'total_friend_count'
+				ORDER BY $usermeta_tablename.meta_value DESC					
 			";											
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);								        			

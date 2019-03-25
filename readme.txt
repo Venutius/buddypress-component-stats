@@ -4,14 +4,14 @@ Donate link: http://manichooo.wordpress.com/
 Tags: buddypress stas, stats, buddypress plugins, statistics, stats community, stats plugin
 Requires at least: 3.4.1
 Tested up to: 5.1
-Stable tag: 1.0.0
+Stable tag: 2.0.0
 
 Obtain buddypress components stats (Forums, Groups, Blogs, Comments, Activity, Friends) about the most active users in each of these components.
 
 
 == Description ==
 
-This plugin was originally created by Manichoo, however the current version of it does not work. This is my initial effort to get it working. However, whilst the user interface is basically complete it's clear to me that Manichoo never actually completed this as many of the back-end queries are not complete. I'm planning to come back to this to try and kick those queires into shape. As far as I can tell only the activities statistics are working in this version. I'd welcome some testers to help get this working.
+This plugin was originally created by Manichoo, however the current version of it does not work. This is my ongoing effort to get it working. So far I've got the basic reports for Activity, Groups, Forums and Friends working, The detail reports for Activity, Forums and friendship also work. I've tested the pdf export for Activity and that works however excel export does not work. I'm also refactoring it to get it in shape to be re-listed in wp.org.
 
 This plugin allows you to run Database reports covering the various BuddyPress components ( Activity, Friends, Groups, Forums plus WordPress Blogs and Comments). It basically maps which users have been interacting with your site over your selected time periods.
 
@@ -31,6 +31,10 @@ This plugin allows you to run Database reports covering the various BuddyPress c
 4. Export records found to PDF and XLS format.
 
 == Changelog ==
+= 2.0 =
+
+* New: Extensive refactoring and major rewrite.
+
 = 1.0 =
 2012-03-10 update a readme.txt
 2012-03-10 update a screenshot-1.jpg

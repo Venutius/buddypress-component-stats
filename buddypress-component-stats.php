@@ -2,7 +2,7 @@
 /*
   Plugin Name: Buddypress Component Stats
   Description: This plugin allows to obtain statistics about the users who interact in the social network and classifies the statistics of the main components of buddypress (Forums, Groups, Blogs, Comments, Activity,   		  Friends) showing results on the most active in each of these components.
-  Version: 1.0
+  Version: 2.0.0
   Author: manichooo
 */
 ?>
@@ -19,6 +19,9 @@
 	
 	/* Call to function that obtain the stats information from the front end view plugin */
 	add_action('wp_ajax_results_query', 'get_component_stats');
+	
+	/* Call to enqueue admin scripts */
+	add_action( 'admin_enqueue_scripts', 'bpcs_admin_enqueue_scripts' );
 		
 	/* Function that compiles stats about the users interaction by components (Activity Stream, Groups, Forums, Comments, Blogs, Friendship) on the social network  */				
 	function get_component_stats() {
@@ -28,16 +31,28 @@
 		$start_date = sanitize_text_field( $_POST['start_date'] );
 		$final_date = sanitize_text_field( $_POST['final_date'] );
 		$component = sanitize_text_field( $_POST['component'] );
+		$user_avatar = sanitize_text_field( __( 'User Avatar', 'buddypress-component-stats' ) );
+		$user = sanitize_text_field( __( 'User', 'buddypress-component-stats' ) );
+		$number_of_publications = sanitize_text_field( __( 'Number of Publications', 'buddypress-component-stats' ) );
+		$email = sanitize_text_field( __( 'e-mail', 'buddypress-component-stats' ) );
+		$registered_from = sanitize_text_field( __( 'Registered from', 'buddypress-component-stats' ) );
+		$last_update = sanitize_text_field( __( 'Last Update', 'buddypress-component-stats' ) );
+		$no_records = sanitize_text_field( __( 'Number of Records Found', 'buddypress-component-stats' ) );
+		$username = sanitize_text_field( __( 'Username', 'buddypress-component-stats' ) );				
+		$no_of_forum_posts = sanitize_text_field( __( 'Number of Forum Posts', 'buddypress-component-stats' ) );
+		$results_found = sanitize_text_field( __( 'Results found on ', 'buddypress-component-stats' ) );
+		$component_bet = sanitize_text_field( __( 'component between', 'buddypress-component-stats' ) );
+		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
 		
 		if($component != 'friendship'){
 			$html.= "<br/>
-				<h4>Results found on <span class='component'>$component</span> component between <strong><b>$start_date</b> and <b>$final_date</b></strong></h4></br>									
+				<h4>$results_found<span class='component'>$component</span> $component_bet <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4></br>									
 				<table id='myTable' class='tablesorter'>
 					<thead>
 			";
 		} else {
 			$html.= "<br/>													
-				<h4>Results found on <span class='component'>$component</span> component</h4></br>
+				<h4>$results_found<span class='component'>$component</span> component</h4></br>
 				<table id='myTable' class='tablesorter'>
 					<thead>
 			";
@@ -71,12 +86,12 @@
 					paginateResults(2,1,$records);								
 					$html.= "						
 						<tr>
-							<th>User Avatar</th>
-							<th>User</th>
-							<th>Number of Publications</th>
-							<th>e-mail</th>
-							<th>Registered from</th>
-							<th>Last Update</th>
+							<th>" . $user_avatar . "</th>
+							<th>" . $user  . "</th>
+							<th>" . $number_of_publications  . "/th>
+							<th>" . $email  . "/th>
+							<th>" . $registered_from . "</th>
+							<th>" . $last_update . "</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -94,7 +109,7 @@
 						</tr>";											
 					}																																																																																																									
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";											
+					echo "<h3><strong>" . $no_records . "</strong></h3>";											
 				}																							
 			break;
 			
@@ -103,7 +118,7 @@
 					SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest,					
 					(SELECT COUNT($groups_members_tablename.user_id) FROM $groups_members_tablename, $users_tablename u2 WHERE u2.ID = $groups_members_tablename.user_id and u2.ID = $users_tablename.ID ) as groups							           														
 					FROM $activity_tablename, $users_tablename			
-					WHERE wp_users.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' 
+					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' 
 					AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
@@ -118,14 +133,14 @@
 					
 					$html.= "
 						<tr>
-							<th>User Avatar</th>
-							<th>Username</th>
+							<th>" . $user_avatar . "</th>
+							<th>" . $username . "</th>
 							<th>Number of Groups Involved</th>
 							<th>Invloved Groups Name</th>
-							<th>Number of Publications</th>
-							<th>e-mail</th>
-							<th>Registered From</th>
-							<th>Last Update</th>
+							<th>" . $number_of_publications  . "/th>
+							<th>" . $email  . "/th>
+							<th>" . $registered_from . "</th>
+							<th>" . $last_update . "</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -134,7 +149,7 @@
 					foreach ( $response as $rs ) {																																																								
 						$total += $rs->publications;																																								
 						$subsql = "
-							SELECT DISTINCT($groups_tablename.name) FROM $groups_members_tablename, $groups_tablename WHERE $groups_members_tablename.user_id = '".$rs->ID."' AND $groups_members_tablename.group_id = $groups_tablename.ID
+							SELECT DISTINCT($groups_tablename.name) FROM $groups_members_tablename, $groups_tablename WHERE $groups_members_tablename.user_id = '".$rs->ID."' AND $groups_members_tablename.group_id = $groups_tablename.user_id
 						";
 						$subresponse = $wpdb->get_results($subsql);													        				
 						if( $subresponse ) {
@@ -157,7 +172,7 @@
 						</tr>";															
 					}																																																																																					
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";
+					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}														
 			break;
 			
@@ -165,7 +180,7 @@
 				$sql = "
 					SELECT COUNT(type) as publications, $activity_tablename.content, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest	
 					FROM $activity_tablename, $users_tablename			
-					WHERE wp_users.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'new_forum_topic' OR type = 'new_forum_post') 
+					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply') 
 					AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
@@ -180,12 +195,12 @@
 					
 					$html.="
 						<tr>
-							<th>User Avatar</th>
-							<th>Username</th>				
-							<th>Number of Forum Posts</th>
-							<th>e-mail</th>
-							<th>Registered From</th>
-							<th>Last Update</th>				
+							<th>" . $user_avatar . "</th>
+							<th>" . $username . "</th>				
+							<th>" . $no_of_forum_posts . "</th>
+							<th>" . $email  . "/th>
+							<th>" . $registered_from . "</th>
+							<th>" . $last_update . "</th>				
 						</tr>
 						</thead>
 						<tbody>
@@ -205,7 +220,7 @@
 						";															
 					}																																																																																																						
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";
+					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}
 								
 			break;
@@ -226,7 +241,7 @@
 						<th>Number of Articles Published</th>
 						<th>Amount Comments</th>
 						<th>Date Created</th>
-						<th>Last Update</th>																	
+						<th>" . $last_update . "</th>																	
 					</tr>
 					</thead>
 					<tbody>";																																																						
@@ -289,7 +304,7 @@
 							}																						 																											
 						}																																																																																																																												
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";
+					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}				 
 			break;
 						
@@ -305,10 +320,10 @@
 					
 					$html.= "
 						<tr>
-							<th>User Avatar</th>
-							<th>Username</th>												
+							<th>" . $user_avatar . "</th>
+							<th>" . $username . "</th>												
 							<th>Number of Comments on Blogs</th>
-							<th>Registered From</th>																							
+							<th>" . $registered_from . "</th>																							
 						</tr>
 						</thead>
 						<tbody>
@@ -328,13 +343,16 @@
 						
 						foreach($responseblogs as $rsblog){																																																																		
 								if($rsblog->blog_id != 1) {
-									$rsb_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
+									$rsb_blog_options_tablename = $wpdb->prefix . $rsblog->blog_id . '_options';
+									$rsb_blog_posts_tablename = $wpdb->prefix . $rsblog->blog_id . '_posts';
+									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
+									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
 									$subsql = "
 										SELECT COUNT(user_id) as comments
-										FROM $rsb_comments_tablename, $users_tablename 
-										WHERE $rsb_comments_tablename.user_id = wp_users.ID 
-										AND wp_users.ID = ".$rs->ID."
-										AND $rsb_comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+										FROM $rsb_blog_comments_tablename, $users_tablename 
+										WHERE $rsb_blog_comments_tablename.user_id = $users_tablename.ID 
+										AND $users_tablename.ID = ".$rs->ID."
+										AND $rsb_blog_comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
 									";
 																																				
 								} else {						
@@ -342,7 +360,7 @@
 										SELECT COUNT(user_id) as comments 
 										FROM $users_tablename, $comments_tablename
 										WHERE $comments_tablename.user_id = $users_tablename.ID 
-										AND wp_users.ID = ".$rs->ID."
+										AND $posts_tablename.ID = ".$rs->ID."
 										AND wp_comments.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
 									";																																				
 								}
@@ -367,7 +385,7 @@
 						$total+=$users[$i]['Comments'];												
 					}																																																																																																														
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";
+					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}				
 			break;	
 			
@@ -376,8 +394,8 @@
 					SELECT $users_tablename.display_name, $users_tablename.user_registered, $usermeta_tablename.meta_value, $users_tablename.user_email
 					FROM $users_tablename, $usermeta_tablename
 					WHERE $users_tablename.ID = $usermeta_tablename.user_id
-					AND wp_usermeta.meta_key = 'total_friend_count'
-					ORDER BY wp_usermeta.meta_value DESC					
+					AND $usermeta_tablename.meta_key = 'total_friend_count'
+					ORDER BY $usermeta_tablename.meta_value DESC					
 				";
 					   					        
 				$response = $wpdb->get_results($sql);
@@ -388,11 +406,11 @@
 					paginateResults(3,1,$records);					
 					$html.= "
 					<tr>
-						<th>User Avatar</th>
-						<th>Username</th>												
-						<th>e-mail</th>
+						<th> $user_avatar </th>
+						<th> $username </th>												
+						<th> $email  </th>
 						<th>Number of Friends</th>
-						<th>Registered From</th>																							
+						<th> $registered_from </th>																							
 					</tr>
 					</thead>
 					<tbody>";																																																																																								
@@ -410,7 +428,7 @@
 						";																					
 					}																																																																																																																																
 				} else {
-					echo "<h3><strong>No records have been found between the selected dates</strong></h3>";								
+					echo "<h3><strong>" . $no_records . "</strong></h3>";								
 				}				 
 			break;						
 		}
@@ -474,6 +492,23 @@
 		$users_tablename = $wpdb->prefix . 'users';
 		$usermeta_tablename = $wpdb->prefix . 'usermeta';
 		$users_tablename = $wpdb->prefix . 'users';
+		$html = '';
+		$start_date = sanitize_text_field( $_POST['start_date'] );
+		$final_date = sanitize_text_field( $_POST['final_date'] );
+		$component = sanitize_text_field( $_POST['component'] );
+		$user_avatar = sanitize_text_field( __( 'User Avatar', 'buddypress-component-stats' ) );
+		$user = sanitize_text_field( __( 'User', 'buddypress-component-stats' ) );
+		$number_of_publications = sanitize_text_field( __( 'Number of Publications', 'buddypress-component-stats' ) );
+		$email = sanitize_text_field( __( 'e-mail', 'buddypress-component-stats' ) );
+		$registered_from = sanitize_text_field( __( 'Registered from', 'buddypress-component-stats' ) );
+		$last_update = sanitize_text_field( __( 'Last Update', 'buddypress-component-stats' ) );
+		$no_records = sanitize_text_field( __( 'Number of Records Found', 'buddypress-component-stats' ) );
+		$username = sanitize_text_field( __( 'Username', 'buddypress-component-stats' ) );				
+		$no_of_forum_posts = sanitize_text_field( __( 'Number of Forum Posts', 'buddypress-component-stats' ) );
+		$results_found = sanitize_text_field( __( 'Results found on ', 'buddypress-component-stats' ) );
+		$comonent_bet = sanitize_text_field( __( 'component between', 'buddypress-component-stats' ) );
+		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
+		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
 		
 		switch($component){		
 		case 'activity':						
@@ -512,17 +547,17 @@
 					</tbody>
 					</table>
 					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
 				";
 			}			
 		break;
 		
 		case 'groups':
 			$sql = "
-				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $groups_members_tablename.name
+				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $groups_members_tablename.user_title
 				FROM $activity_tablename, $users_tablename, $groups_members_tablename
 				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
-				AND $users_tablename.ID = '".$user_id."' AND $groups_tablename.id = $activity_tablename.item_id			
+				AND $users_tablename.ID = '".$user_id."' AND $groups_tablename.id = $activity_tablename.item_id	
 				ORDER BY $activity_tablename.date_recorded DESC
 			"; 				      					        
 			
@@ -554,17 +589,17 @@
 					</tbody>
 					</table>
 					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
 				";
 			}	
 		break;
 		
 		case 'forums':
 			$sql = "
-				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, activity_tablename.item_id			
+				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $activity_tablename.item_id			
 				FROM $activity_tablename, $users_tablename 
-				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'new_forum_topic' OR type = 'new_forum_post') AND date_recorded 
-				BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply') AND date_recorded 
+				BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 				AND $users_tablename.ID = '".$user_id."'			
 				ORDER BY $activity_tablename.date_recorded DESC
 			"; 				      					        
@@ -590,7 +625,7 @@
 					$subsql = "
 						SELECT $activity_tablename.content, $groups_tablename.name 				
 						FROM $activity_tablename, $groups_tablename
-						WHERE $activity_tablename.component = 'groups' AND $activity_tablename.type = 'new_forum_topic' AND $groups_tablename.id = $activity_tablename.item_id
+						WHERE $activity_tablename.component = 'groups' AND $activity_tablename.type = 'bbp_topic_create' AND $groups_tablename.id = $activity_tablename.item_id
 						AND $activity_tablename.item_id	= '".$rs->item_id."'
 					"; 
 					
@@ -615,7 +650,7 @@
 					</tbody>
 					</table>
 					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
 				";
 			}				
 		break;
@@ -758,7 +793,7 @@
 		$html.="							
 			</tbody>
 			</table>
-			<br/><h4>Records found for the articles of the blog <span class='component'>".$final_datelog."</span> between <strong><b>$start_date</b> and <b>$final_date</b></strong></h4>					
+			<br/><h4>Records found for the articles of the blog <span class='component'>$final_datelog</span> between <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4>					
 		";							
 		break;				
 		}
@@ -824,7 +859,13 @@
 		wp_enqueue_script('jquery-table-sorter', $pluginfolder . '/template/js/jquery.tablesorter.js');												
 	}
 	
-	/* funcion que es llamada al dar click en el menu insertado en la barra de opciones de administracion de wordpress */
+	/* enqueue admin scripts */
+	function bpcs_admin_enqueue_scripts() {
+		$pluginfolder = WP_PLUGIN_URL . '/' .dirname(plugin_basename(__FILE__));
+		wp_enqueue_script('buddypress-component-stats-admin', $pluginfolder . '/js/buddypress-component-stats-admin.js');												
+	}
+
+	/* function que es llamada al dar click en el menu insertado en la barra de opciones de administracion de wordpress */
 	function stats_panel(){	 
 	  include('template/stats_panel.php');
 	} 
