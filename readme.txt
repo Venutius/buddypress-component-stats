@@ -27,11 +27,17 @@ This plugin allows you to run Database reports covering the various BuddyPress c
 == Screenshots ==
 1. Select the component and a date range among which to search stats information.
 2. View records found in the date range selected.
-3. Clic over number of publication of the component to obatain detailed results.
+3. Click over number of publication of the component to obtain detailed results.
 4. Export records found to PDF and XLS format.
 
 == Changelog ==
-= 2.0 =
+= 2.0.1 =
+
+* 26/03/2019
+
+* New: Completed installing text domain and translation strings for the main queries.
+
+= 2.0.0 =
 
 * New: Extensive refactoring and major rewrite.
 

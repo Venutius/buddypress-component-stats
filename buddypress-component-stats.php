@@ -1,9 +1,10 @@
 <?php
 /*
   Plugin Name: Buddypress Component Stats
-  Description: This plugin allows to obtain statistics about the users who interact in the social network and classifies the statistics of the main components of buddypress (Forums, Groups, Blogs, Comments, Activity,   		  Friends) showing results on the most active in each of these components.
+  Description: This plugin produce obtain statistics about the users who interact in the social network based on the various activity updates covering the component being queried. Covers the main components of buddypress (Forums, Groups, Blogs, Comments, Activity, Friends) showing results on the most active in each of these components.
   Version: 2.0.0
-  Author: manichooo
+  Author: venutius
+  Text Domain: buddypress-component-stats
 */
 ?>
 <?php         		                       	                     						
@@ -43,6 +44,14 @@
 		$results_found = sanitize_text_field( __( 'Results found on ', 'buddypress-component-stats' ) );
 		$component_bet = sanitize_text_field( __( 'component between', 'buddypress-component-stats' ) );
 		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
+		$number_of_groups = sanitize_text_field( __( 'Number of Groups Involved', 'buddypress-component-stats' ) );
+		$involved_groups = sanitize_text_field( __( 'Involved Groups Name', 'buddypress-component-stats' ) );
+		$blogname = sanitize_text_field( __( 'Blogname', 'buddypress-component-stats' ) );						
+		$blog_url = sanitize_text_field( __( 'Blog URL', 'buddypress-component-stats' ) );
+		$number_of_articles = sanitize_text_field( __( 'Number of Articles Published', 'buddypress-component-stats' ) );
+		$number_of_comments = sanitize_text_field( __( 'Number of Comments', 'buddypress-component-stats' ) ); 
+		$date_created = sanitize_text_field( __( 'Date Created', 'buddypress-component-stats' ) );
+		$number_of_friends = sanitize_text_field( __( 'Number of Friends', 'buddypress-component-stats' ) );
 		
 		if($component != 'friendship'){
 			$html.= "<br/>
@@ -86,12 +95,12 @@
 					paginateResults(2,1,$records);								
 					$html.= "						
 						<tr>
-							<th>" . $user_avatar . "</th>
-							<th>" . $user  . "</th>
-							<th>" . $number_of_publications  . "/th>
-							<th>" . $email  . "/th>
-							<th>" . $registered_from . "</th>
-							<th>" . $last_update . "</th>
+							<th>$user_avatar</th>
+							<th>$user</th>
+							<th>$number_of_publications</th>
+							<th>$email</th>
+							<th>$registered_from</th>
+							<th>$last_update</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -133,14 +142,14 @@
 					
 					$html.= "
 						<tr>
-							<th>" . $user_avatar . "</th>
-							<th>" . $username . "</th>
-							<th>Number of Groups Involved</th>
-							<th>Invloved Groups Name</th>
-							<th>" . $number_of_publications  . "/th>
-							<th>" . $email  . "/th>
-							<th>" . $registered_from . "</th>
-							<th>" . $last_update . "</th>
+							<th>$user_avatar</th>
+							<th>$username</th>
+							<th>$number_of_groups</th>
+							<th>$involved_groups</th>
+							<th>$number_of_publications</th>
+							<th>$email</th>
+							<th>$registered_from</th>
+							<th>$last_update</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -195,12 +204,12 @@
 					
 					$html.="
 						<tr>
-							<th>" . $user_avatar . "</th>
-							<th>" . $username . "</th>				
-							<th>" . $no_of_forum_posts . "</th>
-							<th>" . $email  . "/th>
-							<th>" . $registered_from . "</th>
-							<th>" . $last_update . "</th>				
+							<th>$user_avatar</th>
+							<th>$username</th>				
+							<th>$no_of_forum_posts</th>
+							<th>$email</th>
+							<th>$registered_from</th>
+							<th>$last_update</th>				
 						</tr>
 						</thead>
 						<tbody>
@@ -236,12 +245,12 @@
 					
 					$html.= "
 					<tr>
-						<th>Blogname</th>						
-						<th>Blog URL</th>
-						<th>Number of Articles Published</th>
-						<th>Amount Comments</th>
-						<th>Date Created</th>
-						<th>" . $last_update . "</th>																	
+						<th>$blogname</th>						
+						<th>$blog_url</th>
+						<th>$number_of_articles</th>
+						<th>$number_of_comments</th>
+						<th>$date_created</th>
+						<th>$last_update</th>																	
 					</tr>
 					</thead>
 					<tbody>";																																																						
@@ -320,10 +329,10 @@
 					
 					$html.= "
 						<tr>
-							<th>" . $user_avatar . "</th>
-							<th>" . $username . "</th>												
-							<th>Number of Comments on Blogs</th>
-							<th>" . $registered_from . "</th>																							
+							<th>$user_avatar</th>
+							<th>$username</th>												
+							<th>$number_of_comments</th>
+							<th>$registered_from</th>																							
 						</tr>
 						</thead>
 						<tbody>
@@ -406,11 +415,11 @@
 					paginateResults(3,1,$records);					
 					$html.= "
 					<tr>
-						<th> $user_avatar </th>
-						<th> $username </th>												
-						<th> $email  </th>
-						<th>Number of Friends</th>
-						<th> $registered_from </th>																							
+						<th>$user_avatar</th>
+						<th>$username</th>												
+						<th>$email</th>
+						<th>$number_of_friends</th>
+						<th>$registered_from</th>																							
 					</tr>
 					</thead>
 					<tbody>";																																																																																								
@@ -508,8 +517,29 @@
 		$results_found = sanitize_text_field( __( 'Results found on ', 'buddypress-component-stats' ) );
 		$comonent_bet = sanitize_text_field( __( 'component between', 'buddypress-component-stats' ) );
 		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
-		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
-		
+		$number_of_groups = sanitize_text_field( __( 'Number of Groups Involved', 'buddypress-component-stats' ) );
+		$involved_groups = sanitize_text_field( __( 'Involved Groups Name', 'buddypress-component-stats' ) );
+		$blogname = sanitize_text_field( __( 'Blogname', 'buddypress-component-stats' ) );						
+		$blog_url = sanitize_text_field( __( 'Blog URL', 'buddypress-component-stats' ) );
+		$number_of_articles = sanitize_text_field( __( 'Number of Articles Published', 'buddypress-component-stats' ) );
+		$number_of_comments = sanitize_text_field( __( 'Number of Comments', 'buddypress-component-stats' ) ); 
+		$date_created = sanitize_text_field( __( 'Date Created', 'buddypress-component-stats' ) );
+		$number_of_friends = sanitize_text_field( __( 'Number of Friends', 'buddypress-component-stats' ) );
+		$content_text = sanitize_text_field( __( 'Content', 'buddypress-component-stats' ) );
+		$group_name = sanitize_text_field( __( 'Group Name', 'buddypress-component-stats' ) );
+		$date_text = sanitize_text_field( __( 'Date', 'buddypress-component-stats' ) );
+		$records_for_user = sanitize_text_field( __( 'Records found for the user ', 'buddypress-component-stats' ) );
+		$between = sanitize_text_field( __( 'between ', 'buddypress-component-stats' ) );
+		$on = sanitize_text_field( __( 'on', 'buddypress-component-stats' ) );
+		$component_text = sanitize_text_field( __( 'component', 'buddypress-component-stats' ) );
+		$published_on_forum = sanitize_text_field( __( 'Published on Forum', 'buddypress-component-stats' ) );
+		$forum_group = sanitize_text_field( __( 'Forum Group', 'buddypress-component-stats' ) );
+		$article_title = sanitize_text_field( __( 'Article Title', 'buddypress-component-stats' ) );
+		$publication_date = sanitize_text_field( __( 'Publication Date', 'buddypress-component-stats' ) );
+		$comments_text = sanitize_text_field( __( 'Comments', 'buddypress-component-stats' ) );
+		$without_comments = sanitize_text_field( __( 'Without Comments', 'buddypress-component-stats' ) );
+		$records_found_for_blog = sanitize_text_field( __( 'Records found for the articles of the blog', 'buddypress-component-stats' ) );
+		$comment_author_text = sanitize_text_field( __( 'Comment Author', 'buddypress-component-stats' ) );
 		switch($component){		
 		case 'activity':						
 			$sql = "
@@ -528,8 +558,8 @@
 					<table width='100%' id='tabladetalle'>
 					<thead>
 					<tr>								
-						<th width='70%'>Content</th>
-						<th width='30%'>Date</th>				
+						<th width='70%'>$content_text</th>
+						<th width='30%'>$date_text</th>				
 					</tr>
 					</thead>
 					<tbody>
@@ -546,8 +576,8 @@
 				$html.="							
 					</tbody>
 					</table>
-					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
 				";
 			}			
 		break;
@@ -556,7 +586,7 @@
 			$sql = "
 				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $groups_members_tablename.user_title
 				FROM $activity_tablename, $users_tablename, $groups_members_tablename
-				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
 				AND $users_tablename.ID = '".$user_id."' AND $groups_tablename.id = $activity_tablename.item_id	
 				ORDER BY $activity_tablename.date_recorded DESC
 			"; 				      					        
@@ -568,10 +598,10 @@
 				$html = "<br/>													
 				<table width='100%' id='tabladetalle'>
 				<thead>
-				<tr>								
-					<th width='40%'>Content</th>
-					<th width='30%'>Group Name</th>
-					<th width='30%'>Date</th>				
+				<tr>
+					<th width='40%'>$content_text</th>
+					<th width='30%'>$group_name</th>
+					<th width='30%'>$date_text</th>
 				</tr>
 				</thead>
 				<tbody>";
@@ -588,8 +618,8 @@
 				$html.="							
 					</tbody>
 					</table>
-					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
 				";
 			}	
 		break;
@@ -612,10 +642,10 @@
 					<table width='100%' id='tabladetalle'>
 					<thead>
 						<tr>								
-							<th width='40%'>Content</th>
-							<th width='20%'>Published on Forum</th>
-							<th width='20%'>Forum Group</th>
-							<th width='20%'>Date</th>				
+							<th width='40%'>$content_text</th>
+							<th width='20%'>$published_on_forum</th>
+							<th width='20%'>$forum_group</th>
+							<th width='20%'>$date_text</th>				
 						</tr>
 					</thead>
 					<tbody>
@@ -649,8 +679,8 @@
 				$html.="							
 					</tbody>
 					</table>
-					</br><h4>Records found for the user <strong><b>".$rs->display_name."</b></strong> 
-					between <strong><b>$start_date</b> $and <b>$final_date</b></strong> on<strong><b> <span class='component'>$component</span> </b></strong>component</h4>					
+					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
 				";
 			}				
 		break;
@@ -661,13 +691,13 @@
 			<table width='100%' id='tabladetalle'>
 			<thead>
 			<tr>								
-				<th width='20%'>Article Title</th>
-				<th width='20%'>Publication Date</th>
+				<th width='20%'>$article_title</th>
+				<th width='20%'>$publication_date</th>
 				<th width='60%'>
-					Comments
+					$comments_text
 					<table width='100%'>
 						<tr>
-							<td width='20%'>Comment Author</td> <td width='50%'>Content</td> <td width='30%'>Date</td>
+							<td width='20%'>$comment_author_text</td> <td width='50%'>$content_text</td> <td width='30%'>Date</td>
 						</tr>
 					</table>
 				</th>											
@@ -720,7 +750,7 @@
 							$html.="																																		
 								<table width='100%'>
 									<tr>
-										<td colspan='3'>Without Comments</td> 										
+										<td colspan='3'>$without_comments</td> 										
 									</tr>
 								</table>
 							";
@@ -775,7 +805,7 @@
 							$html.="																																		
 									<table width='100%'>
 										<tr>
-											<td colspan='3'>Without Comments</td> 											
+											<td colspan='3'>$without_comments</td>
 										</tr>
 									</table>
 								";
@@ -793,7 +823,7 @@
 		$html.="							
 			</tbody>
 			</table>
-			<br/><h4>Records found for the articles of the blog <span class='component'>$final_datelog</span> between <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4>					
+			<br/><h4>$records_found_for_blog <span class='component'>$final_datelog</span> $between <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4>					
 		";							
 		break;				
 		}
@@ -857,6 +887,7 @@
 		wp_enqueue_script('jquery-ui-datepicker', $pluginfolder . '/template/js/ui.datepicker.min.js');		
 		wp_enqueue_script('jquery-paginator', $pluginfolder . '/template/js/smartpaginator.js');
 		wp_enqueue_script('jquery-table-sorter', $pluginfolder . '/template/js/jquery.tablesorter.js');												
+		load_textdomain( 'buddypress-component-stats', dirname( __FILE__ ) . '/languages/' );
 	}
 	
 	/* enqueue admin scripts */
