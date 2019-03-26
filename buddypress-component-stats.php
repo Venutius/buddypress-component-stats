@@ -2,7 +2,7 @@
 /*
   Plugin Name: Buddypress Component Stats
   Description: This plugin produce obtain statistics about the users who interact in the social network based on the various activity updates covering the component being queried. Covers the main components of buddypress (Forums, Groups, Blogs, Comments, Activity, Friends) showing results on the most active in each of these components.
-  Version: 2.0.0
+  Version: 2.1.0
   Author: venutius
   Text Domain: buddypress-component-stats
 */
@@ -43,6 +43,7 @@
 		$no_of_forum_posts = sanitize_text_field( __( 'Number of Forum Posts', 'buddypress-component-stats' ) );
 		$results_found = sanitize_text_field( __( 'Results found on ', 'buddypress-component-stats' ) );
 		$component_bet = sanitize_text_field( __( 'component between', 'buddypress-component-stats' ) );
+		$component_text = sanitize_text_field( __( 'component', 'buddypress-component-stats' ) );
 		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
 		$number_of_groups = sanitize_text_field( __( 'Number of Groups Involved', 'buddypress-component-stats' ) );
 		$involved_groups = sanitize_text_field( __( 'Involved Groups Name', 'buddypress-component-stats' ) );
@@ -52,6 +53,7 @@
 		$number_of_comments = sanitize_text_field( __( 'Number of Comments', 'buddypress-component-stats' ) ); 
 		$date_created = sanitize_text_field( __( 'Date Created', 'buddypress-component-stats' ) );
 		$number_of_friends = sanitize_text_field( __( 'Number of Friends', 'buddypress-component-stats' ) );
+		$number_of_posts = sanitize_text_field( __( 'Number of Posts', 'buddypress-component-stats' ) ); 
 		
 		if($component != 'friendship'){
 			$html.= "<br/>
@@ -82,7 +84,7 @@
 				$sql = "
 					SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest 
 					FROM $activity_tablename, $users_tablename
-					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59' 
+					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59' 
 					GROUP BY(user_id) 
 					ORDER BY (publications) DESC
 				";								
@@ -128,7 +130,7 @@
 					(SELECT COUNT($groups_members_tablename.user_id) FROM $groups_members_tablename, $users_tablename u2 WHERE u2.ID = $groups_members_tablename.user_id and u2.ID = $users_tablename.ID ) as groups							           														
 					FROM $activity_tablename, $users_tablename			
 					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' 
-					AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+					AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
 				"; 								   					        
@@ -158,7 +160,7 @@
 					foreach ( $response as $rs ) {																																																								
 						$total += $rs->publications;																																								
 						$subsql = "
-							SELECT DISTINCT($groups_tablename.name) FROM $groups_members_tablename, $groups_tablename WHERE $groups_members_tablename.user_id = '".$rs->ID."' AND $groups_members_tablename.group_id = $groups_tablename.user_id
+							SELECT DISTINCT($groups_tablename.name) FROM $groups_members_tablename, $groups_tablename WHERE $groups_members_tablename.user_id = '".$rs->ID."' AND $groups_members_tablename.group_id = $groups_tablename.id
 						";
 						$subresponse = $wpdb->get_results($subsql);													        				
 						if( $subresponse ) {
@@ -190,7 +192,7 @@
 					SELECT COUNT(type) as publications, $activity_tablename.content, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest	
 					FROM $activity_tablename, $users_tablename			
 					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply') 
-					AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+					AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
 				"; 								   					        
@@ -235,27 +237,29 @@
 			break;
 			
 			case 'blogs': 
-				$sql = "SELECT blog_id, domain, path, registered, last_updated FROM $blogs_tablename WHERE last_updated BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'";					   					        
-				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
+				if ( is_multisite() ) {
+					$sql = "SELECT blog_id, domain, path, registered, last_updated FROM $blogs_tablename WHERE last_updated BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'";
+				}
 				
-				if($response){								
-					$query=true;
-					paginateResults(2,1,$records);
-					
-					$html.= "
-					<tr>
-						<th>$blogname</th>						
-						<th>$blog_url</th>
-						<th>$number_of_articles</th>
-						<th>$number_of_comments</th>
-						<th>$date_created</th>
-						<th>$last_update</th>																	
-					</tr>
-					</thead>
-					<tbody>";																																																						
-										
-					foreach ($response as $rs) {																																																																			
+				if ( isset( $sql ) ) {
+					$response = $wpdb->get_results($sql);
+					$records = sizeof($response);								        
+					if($response){								
+						$query=true;
+						paginateResults(2,1,$records);
+						
+						$html.= "
+						<tr>
+							<th>$blogname</th>						
+							<th>$blog_url</th>
+							<th>$number_of_articles</th>
+							<th>$number_of_comments</th>
+							<th>$date_created</th>
+							<th>$last_update</th>																	
+						</tr>
+						</thead>
+						<tbody>";
+						foreach ($response as $rs) {
 							$url = 'http://'.$rs->domain.$rs->path;						
 							if($rs->blog_id != 1) {	
 								$rs_blog_options_tablename = $wpdb->prefix . $rs->blog_id . '_options';
@@ -267,9 +271,9 @@
 									SELECT COUNT($rs_blog_comments_tablename.comment_ID) as comments, $rs_blog_options_tablename.option_value as blogname, 
 									(SELECT COUNT($rs_blog_posts_tablename.post_type) FROM $rs_blog_posts_tablename 
 									WHERE $rs_blog_posts_tablename.post_type = 'post' AND $rs_blog_posts_tablename.post_status = 'publish' 
-									AND $rs_blog_posts_tablename.post_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59') as articles
+									AND $rs_blog_posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59') as articles
 									FROM $rs_blog_options_tablename, $rs_blog_comments_tablename 
-									WHERE $rs_blog_options_tablename.option_name = 'blogname' AND $rs_blog_comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+									WHERE $rs_blog_options_tablename.option_name = 'blogname' AND $rs_blog_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									ORDER BY articles DESC								 
 								";							
 								
@@ -291,9 +295,9 @@
 								"
 									SELECT COUNT($comments_tablename.comment_ID) as comments, $options_tablename.option_value as blogname, 
 									(SELECT COUNT(wp_posts.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND wp_posts.post_status = 'publish' 
-									AND $posts_tablename.post_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59') as articles
+									AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59') as articles
 									FROM $options_tablename, $comments_tablename 
-									WHERE wp_options.option_name = 'blogname' AND wp_comments.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+									WHERE wp_options.option_name = 'blogname' AND wp_comments.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									ORDER BY articles DESC	
 								";
 																
@@ -310,19 +314,79 @@
 										<td>".normalize_dates($rs->last_updated)."</td>
 									</tr>";	
 								}
-							}																						 																											
-						}																																																																																																																												
+							}
+						}
+					} else {
+						echo "<h3><strong>" . $no_records . "</strong></h3>";
+					}
 				} else {
-					echo "<h3><strong>" . $no_records . "</strong></h3>";
-				}				 
-			break;
+					$sql = "SELECT $users_tablename.ID, $users_tablename.display_name, $users_tablename.user_registered, $users_tablename.user_email FROM $users_tablename";
+					$response = $wpdb->get_results($sql);
+					$records = sizeof($response);								        
+					if($response){
 						
+						$query = true;
+						paginateResults(2,1,$records);
+						
+						$html.= "
+							<tr>
+								<th>$user_avatar</th>
+								<th>$username</th>
+								<th>$number_of_posts</th>
+								<th>$registered_from</th>																							
+							</tr>
+							</thead>
+							<tbody>
+						";					
+						$users = array();
+						$pos=0;															
+						
+						foreach ($response as $rs) {
+							
+							$users[$pos]['UserName'] = $rs->display_name;	
+							$users[$pos]['RegisteredDate'] = $rs->user_registered;
+							$users[$pos]['email'] = $rs->user_email;
+							$users[$pos]['Posts'] = 0;
+							$subsql = "
+								SELECT COUNT($posts_tablename.ID) as posts 
+								FROM $posts_tablename, $users_tablename 
+								WHERE $posts_tablename.post_author = $users_tablename.ID 
+								AND $users_tablename.ID = ".$rs->ID."
+								AND $posts_tablename.post_status = 'publish'
+								AND $posts_tablename.post_type = 'post'
+								AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
+							";																																				
+							$responseco = $wpdb->get_results($subsql);																																
+							foreach ($responseco as $rscom){									
+								$users[$pos]['Posts'] += $rscom->posts;
+							}
+							$pos++;
+						}
+						for($i=0; $i<sizeof($users); $i++){
+							$html.="
+								<tr>																							
+									<td class='avatar' align='center'>".get_avatar( $users[$i]['email'], 24 )."</td>
+									<td>".$users[$i]['UserName']."</td>
+									<td align='center'>".$users[$i]['Posts']."</td>
+									<td>".normalize_dates($users[$i]['RegisteredDate'])."</td>
+								</tr>
+							";
+							$total+=$users[$i]['Posts'];
+						}
+						
+					} else {
+						echo "<h3><strong>" . $no_records . "</strong></h3>";
+					}
+				}
+				 
+			break;
+
 			case 'comments': 
-				$sql = "SELECT $users_tablename.ID, $users_tablename.display_name, $users_tablename.user_registered, $users_tablename.user_email FROM $users_tablename";					   					        
+				$sql = "SELECT $users_tablename.ID, $users_tablename.display_name, $users_tablename.user_registered, $users_tablename.user_email FROM $users_tablename";
 				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
+				$records = sizeof($response);
 				
-				if($response){			
+				if($response){
 					
 					$query = true;
 					paginateResults(2,1,$records);
@@ -336,41 +400,47 @@
 						</tr>
 						</thead>
 						<tbody>
-					";																																																																					
-					
+					";					
 					$users = array();
 					$pos=0;															
 					
-					foreach ($response as $rs) {																																																																																										
+					foreach ($response as $rs) {
 						
 						$users[$pos]['UserName'] = $rs->display_name;	
 						$users[$pos]['RegisteredDate'] = $rs->user_registered;
 						$users[$pos]['email'] = $rs->user_email;
+						$users[$pos]['Comments'] = 0;
 						
-						$sqlblogs = "SELECT blog_id FROM $blogs_tablename";
-						$responseblogs = $wpdb->get_results($sqlblogs); 												
+						if ( is_multisite() ) {
+							$sqlblogs = "SELECT blog_id FROM $blogs_tablename";
+							$responseblogs = $wpdb->get_results( $sqlblogs );
+						}
 						
-						foreach($responseblogs as $rsblog){																																																																		
+						if ( isset( $responseblogs ) ) {
+							foreach($responseblogs as $rsblog){
+						
 								if($rsblog->blog_id != 1) {
 									$rsb_blog_options_tablename = $wpdb->prefix . $rsblog->blog_id . '_options';
 									$rsb_blog_posts_tablename = $wpdb->prefix . $rsblog->blog_id . '_posts';
 									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
 									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
 									$subsql = "
-										SELECT COUNT(user_id) as comments
+										SELECT COUNT($comments_tablename.comment_ID) as comments
 										FROM $rsb_blog_comments_tablename, $users_tablename 
 										WHERE $rsb_blog_comments_tablename.user_id = $users_tablename.ID 
 										AND $users_tablename.ID = ".$rs->ID."
-										AND $rsb_blog_comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+										AND $rsb_blog_comments_tablename.comment_approved = 1
+										AND $rsb_blog_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									";
 																																				
 								} else {						
 									$subsql = "
-										SELECT COUNT(user_id) as comments 
-										FROM $users_tablename, $comments_tablename
+										SELECT COUNT($comments_tablename.comment_ID) as comments 
+										FROM $comments_tablename, $users_tablename 
 										WHERE $comments_tablename.user_id = $users_tablename.ID 
-										AND $posts_tablename.ID = ".$rs->ID."
-										AND wp_comments.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+										AND $comments_tablename.user_id = ".$rs->ID."
+										AND $comments_tablename.comment_approved = 1
+										AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									";																																				
 								}
 								
@@ -378,11 +448,25 @@
 								foreach ($responseco as $rscom){									
 									$users[$pos]['Comments'] += $rscom->comments;
 								}
+							}
+						} else {
+							$subsql = "
+								SELECT COUNT($comments_tablename.comment_ID) as comments 
+								FROM $comments_tablename, $users_tablename 
+								WHERE $comments_tablename.user_id = $users_tablename.ID 
+								AND $comments_tablename.user_id = ".$rs->ID."
+								AND $comments_tablename.comment_approved = 1
+								AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
+							";																																				
+							$responseco = $wpdb->get_results($subsql);																																
+							foreach ($responseco as $rscom){									
+								$users[$pos]['Comments'] += $rscom->comments;
+							}
 						}
-						$pos++;																																																						
+						$pos++;
 					}																																								
 														
-					for($i=0; $i<sizeof($users); $i++){																																																
+					for($i=0; $i<sizeof($users); $i++){
 						$html.="
 							<tr>																							
 								<td class='avatar' align='center'>".get_avatar( $users[$i]['email'], 24 )."</td>
@@ -392,7 +476,7 @@
 							</tr>
 						";
 						$total+=$users[$i]['Comments'];												
-					}																																																																																																														
+					}
 				} else {
 					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}				
@@ -446,7 +530,7 @@
 			$html.="
 					<table>
 					<tr>
-						<td><i style='float:left; width:100%;'>Total publications on <span class='component'>$component </span> component: $total</i></td>
+						<td><i style='float:left; width:100%;'>Total publications on <span class='component'>$component </span> $component_text: $total</i></td>
 					</tr>
 					</table>			
 				</tbody>
@@ -545,7 +629,7 @@
 			$sql = "
 				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded
 				FROM $activity_tablename, $users_tablename
-				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'activity' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				AND $users_tablename.ID = '".$user_id."'
 				ORDER BY $activity_tablename.date_recorded DESC
 			";
@@ -584,9 +668,9 @@
 		
 		case 'groups':
 			$sql = "
-				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $groups_members_tablename.user_title
-				FROM $activity_tablename, $users_tablename, $groups_members_tablename
-				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
+				SELECT $activity_tablename.content,$groups_tablename.name, $users_tablename.display_name, $activity_tablename.date_recorded, $groups_members_tablename.user_title
+				FROM $activity_tablename, $users_tablename, $groups_members_tablename, $groups_tablename
+				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				AND $users_tablename.ID = '".$user_id."' AND $groups_tablename.id = $activity_tablename.item_id	
 				ORDER BY $activity_tablename.date_recorded DESC
 			"; 				      					        
@@ -629,7 +713,7 @@
 				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded, $activity_tablename.item_id			
 				FROM $activity_tablename, $users_tablename 
 				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply') AND date_recorded 
-				BETWEEN '$start_date' 00:00:00' AND '$final_date' 23:59:59'
+				BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				AND $users_tablename.ID = '".$user_id."'			
 				ORDER BY $activity_tablename.date_recorded DESC
 			"; 				      					        
@@ -712,7 +796,7 @@
 				 $sql="
 					SELECT $id_posts_tablename.post_title, $id_posts_tablename.post_date, $id_posts_tablename.ID
 					FROM $id_posts_tablename
-					WHERE $id_posts_tablename.post_status = 'publish' AND $id_posts_tablename.post_type = 'post' AND $id_posts_tablename.post_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+					WHERE $id_posts_tablename.post_status = 'publish' AND $id_posts_tablename.post_type = 'post' AND $id_posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				";					
 				$response = $wpdb->get_results($sql);						
 				if($response) {																									
@@ -723,7 +807,7 @@
 							FROM $id_posts_tablename, $id_comments_tablename
 							WHERE $id_comments_tablename.comment_post_ID = $id_posts_tablename.ID
 							AND $id_comments_tablename.comment_post_ID = '".$rs->ID."'
-							AND $id_comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'																					 
+							AND $id_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'																					 
 						";																									
 						
 						$html.="																									
@@ -770,7 +854,7 @@
 				$sql="
 					SELECT $posts_tablename.post_title, $posts_tablename.post_date, $posts_tablename.ID
 					FROM $posts_tablename
-					WHERE $posts_tablename.post_status = 'publish' AND $posts_tablename.post_type = 'post' AND wp_posts.post_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'
+					WHERE $posts_tablename.post_status = 'publish' AND $posts_tablename.post_type = 'post' AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				";					
 				$response = $wpdb->get_results($sql);						
 				if($response) {																									
@@ -778,7 +862,7 @@
 						$subco="
 							SELECT $comments_tablename.comment_author, $comments_tablename.comment_date, $comments_tablename.comment_content
 							FROM $posts_tablename, $comments_tablename
-							WHERE $comments_tablename.comment_post_ID = $posts_tablename.ID AND $comments_tablename.comment_post_ID = '".$rs->ID."' AND $comments_tablename.comment_date BETWEEN '".$start_date." 00:00:00' AND '".$final_date." 23:59:59'								 
+							WHERE $comments_tablename.comment_post_ID = $posts_tablename.ID AND $comments_tablename.comment_post_ID = '".$rs->ID."' AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'								 
 						";																			
 						
 						$html.="																									
