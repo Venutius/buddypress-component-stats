@@ -5,6 +5,7 @@ function detailed_publications(id,startDate,finalDate,comp) {
 	var data = {
 		action: 'component_detailed_stats',
 		user_id:id,
+		security : ajax_object.check_nonce,
 		start_date: startDate,
 		final_date: finalDate,
 		component:comp			
@@ -71,7 +72,7 @@ function ValidateForm() {
 		}
 	} else {
 		
-	}
+}
 	
 	jQuery("#green").hide();		
 	jQuery("#detailed_results").hide();
@@ -82,16 +83,48 @@ function ValidateForm() {
 	
 	var data = {
 		action: 'results_query',
-		component: jQuery("#component").val(), 						
+		component: jQuery("#component").val(),
+		security : ajax_object.check_nonce,
 		start_date: jQuery("#datepicker_start").val(),
 		final_date: jQuery("#datepicker_final").val()
 	};
 			
 	jQuery.post(ajaxurl, data, function(response) {															
 		jQuery("#preload").hide();
-		jQuery("#results").html(response);																																				
+		jQuery("#results").html(response);
+		paginateResults();
 		jQuery("#green").show();																													
 	});	
 	
 	return false;									
+}
+/* Fucntion to paginate results using javascript */
+function paginateResults() {
+
+	paginationInfo = document.getElementById( 'bpcs-pagination-data' );
+	dataA = paginationInfo.dataset.a;
+	dataB = paginationInfo.dataset.b;
+	dataRecords = paginationInfo.dataset.records;
+
+	jQuery("#myTable").tablesorter({         
+		sortList: [[dataA, dataB]] 
+	});			
+	jQuery('#green').smartpaginator({ 				
+		totalrecords: dataRecords,
+		recordsperpage: 25, 
+		datacontainer: 'myTable', 
+		initval:0,
+		length: 10,
+		dataelement: 'tr',
+		next: 'Next', 
+		prev: 'Prev', 
+		first: 'First', 
+		last: 'Last',
+		display: 'single',
+		theme: 'green'
+	});
+	
+	jQuery('#btnexport').click(function(){
+		jQuery('#formats').toggle();
+	});
 }

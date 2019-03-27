@@ -21,11 +21,9 @@
 	/* Call to function that obtain the stats information from the front end view plugin */
 	add_action('wp_ajax_results_query', 'get_component_stats');
 	
-	/* Call to enqueue admin scripts */
-	add_action( 'admin_enqueue_scripts', 'bpcs_admin_enqueue_scripts' );
-		
 	/* Function that compiles stats about the users interaction by components (Activity Stream, Groups, Forums, Comments, Blogs, Friendship) on the social network  */				
 	function get_component_stats() {
+		wp_verify_nonce( $_POST['security'], 'bpcs-nonce');
 		global $wpdb;
 		$html = '';
 		$total = 0;
@@ -57,12 +55,12 @@
 		
 		if($component != 'friendship'){
 			$html.= "<br/>
-				<h4>$results_found<span class='component'>$component</span> $component_bet <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4></br>									
+				<h4>$results_found<span class='component'>$component</span> $component_bet <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4></br>
 				<table id='myTable' class='tablesorter'>
 					<thead>
 			";
 		} else {
-			$html.= "<br/>													
+			$html.= "<br/>
 				<h4>$results_found<span class='component'>$component</span> component</h4></br>
 				<table id='myTable' class='tablesorter'>
 					<thead>
@@ -90,12 +88,12 @@
 				";								
 				        					        
 				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
+				$records = sizeof($response);
 				
-				if($response){					
+				if($response){
 					$query = true;
-					paginateResults(2,1,$records);								
-					$html.= "						
+					$html.= "
+						<input type='hidden' data-a='2' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 						<tr>
 							<th>$user_avatar</th>
 							<th>$user</th>
@@ -106,43 +104,43 @@
 						</tr>
 						</thead>
 						<tbody>
-					";																																																						                    
-					foreach ( $response as $rs ) {																																																													
-						$total += $rs->publications;																													
-						$html.="																									
-						<tr>					
+					";
+					foreach ( $response as $rs ) {
+						$total += $rs->publications;
+						$html.="
+						<tr>
 							<td class='avatar' align='center'>".get_avatar( $rs->user_email, 24 )."</td>
-							<td>$rs->display_name</td>														
+							<td>$rs->display_name</td>
 							<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->ID."','".$start_date."','".$final_date."', 'activity')\">$rs->publications</a></td>
 							<td>$rs->user_email</td>
 							<td>".normalize_dates($rs->user_registered)."</td>
-							<td>".normalize_dates($rs->latest)."</td>					
-						</tr>";											
-					}																																																																																																									
+							<td>".normalize_dates($rs->latest)."</td>
+						</tr>";
+					}
 				} else {
-					echo "<h3><strong>" . $no_records . "</strong></h3>";											
-				}																							
+					echo "<h3><strong>" . $no_records . "</strong></h3>";
+				}
 			break;
 			
-			case 'groups':												
+			case 'groups':
 				$sql = "
-					SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest,					
-					(SELECT COUNT($groups_members_tablename.user_id) FROM $groups_members_tablename, $users_tablename u2 WHERE u2.ID = $groups_members_tablename.user_id and u2.ID = $users_tablename.ID ) as groups							           														
-					FROM $activity_tablename, $users_tablename			
+					SELECT COUNT(type) as publications, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest,
+					(SELECT COUNT($groups_members_tablename.user_id) FROM $groups_members_tablename, $users_tablename u2 WHERE u2.ID = $groups_members_tablename.user_id and u2.ID = $users_tablename.ID ) as groups
+					FROM $activity_tablename, $users_tablename
 					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' 
 					AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
-				"; 								   					        
+				";
 				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
+				$records = sizeof($response);
 				
 				if($response){	
 					
 					$query = true;
-					paginateResults(4,1,$records);
 					
 					$html.= "
+						<input type='hidden' data-a='4' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 						<tr>
 							<th>$user_avatar</th>
 							<th>$username</th>
@@ -155,85 +153,83 @@
 						</tr>
 						</thead>
 						<tbody>
-					";																																												
+					";
 					
-					foreach ( $response as $rs ) {																																																								
-						$total += $rs->publications;																																								
+					foreach ( $response as $rs ) {
+						$total += $rs->publications;
 						$subsql = "
 							SELECT DISTINCT($groups_tablename.name) FROM $groups_members_tablename, $groups_tablename WHERE $groups_members_tablename.user_id = '".$rs->ID."' AND $groups_members_tablename.group_id = $groups_tablename.id
 						";
-						$subresponse = $wpdb->get_results($subsql);													        				
+						$subresponse = $wpdb->get_results($subsql);
 						if( $subresponse ) {
 							$groupsname = '';
 							foreach ( $subresponse as $rsg ){
 								$groupsname.= $rsg->name."<br />";
 							}
 						}
-																		
+						
 						$html.="
-						<tr>					
+						<tr>
 							<td class='avatar' align='center'>".get_avatar( $rs->user_email, 24 )."</td>
-							<td>$rs->display_name</td>							
+							<td>$rs->display_name</td>
 							<td align='center'>$rs->groups</td>
 							<td align='center'>$groupsname</td>
 							<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->ID."','".$start_date."','".$final_date."','groups')\">$rs->publications</a></td>
 							<td>$rs->user_email</td>
 							<td>".normalize_dates($rs->user_registered)."</td>
 							<td>".normalize_dates($rs->latest)."</td>
-						</tr>";															
-					}																																																																																					
+						</tr>";
+					}
 				} else {
 					echo "<h3><strong>" . $no_records . "</strong></h3>";
-				}														
+				}
 			break;
 			
 			case 'forums': 
 				$sql = "
-					SELECT COUNT(type) as publications, $activity_tablename.content, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest	
-					FROM $activity_tablename, $users_tablename			
-					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply') 
+					SELECT COUNT(type) as publications, $activity_tablename.content, $users_tablename.display_name, $users_tablename.ID, $users_tablename.user_email, $users_tablename.user_registered, MAX($activity_tablename.date_recorded) AS latest
+					FROM $activity_tablename, $users_tablename
+					WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND (type = 'bbp_topic_create' OR type = 'bbp_topic_reply')
 					AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 					GROUP BY $activity_tablename.user_id
 					ORDER BY (publications) DESC
-				"; 								   					        
+				";
 				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
-				
+				$records = sizeof($response);
 				if($response){			
 					
 					$query = true;
-					paginateResults(2,1,$records);
 					
 					$html.="
+						<input type='hidden' data-a='2' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 						<tr>
 							<th>$user_avatar</th>
-							<th>$username</th>				
+							<th>$username</th>
 							<th>$no_of_forum_posts</th>
 							<th>$email</th>
 							<th>$registered_from</th>
-							<th>$last_update</th>				
+							<th>$last_update</th>
 						</tr>
 						</thead>
 						<tbody>
-					";																																												
-					
-					foreach ( $response as $rs ) {																																																								
-						$total += $rs->publications;						
-						$html.="						
-							<tr>					
+					";
+					foreach ( $response as $rs ) {
+						$total += $rs->publications;
+						$html.="
+							<tr>
 								<td class='avatar' align='center'>".get_avatar( $rs->user_email, 24 )."</td>
-								<td>$rs->display_name</td>					
+								<td>$rs->display_name</td>
 								<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->ID."','".$start_date."','".$final_date."', 'forums')\">$rs->publications</a></td>
 								<td>$rs->user_email</td>
 								<td>".normalize_dates($rs->user_registered)."</td>
-								<td>".normalize_dates($rs->latest)."</td>										
+								<td>".normalize_dates($rs->latest)."</td>
 							</tr>
-						";															
-					}																																																																																																						
+						";
+					}
 				} else {
 					echo "<h3><strong>" . $no_records . "</strong></h3>";
 				}
-								
+				
 			break;
 			
 			case 'blogs': 
@@ -243,24 +239,24 @@
 				
 				if ( isset( $sql ) ) {
 					$response = $wpdb->get_results($sql);
-					$records = sizeof($response);								        
-					if($response){								
+					$records = sizeof($response);
+					if($response){
 						$query=true;
-						paginateResults(2,1,$records);
 						
 						$html.= "
+						<input type='hidden' data-a='2' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 						<tr>
-							<th>$blogname</th>						
+							<th>$blogname</th>
 							<th>$blog_url</th>
 							<th>$number_of_articles</th>
 							<th>$number_of_comments</th>
 							<th>$date_created</th>
-							<th>$last_update</th>																	
+							<th>$last_update</th>
 						</tr>
 						</thead>
 						<tbody>";
 						foreach ($response as $rs) {
-							$url = 'http://'.$rs->domain.$rs->path;						
+							$url = 'http://'.$rs->domain.$rs->path;
 							if($rs->blog_id != 1) {	
 								$rs_blog_options_tablename = $wpdb->prefix . $rs->blog_id . '_options';
 								$rs_blog_posts_tablename = $wpdb->prefix . $rs->blog_id . '_posts';
@@ -275,37 +271,34 @@
 									FROM $rs_blog_options_tablename, $rs_blog_comments_tablename 
 									WHERE $rs_blog_options_tablename.option_name = 'blogname' AND $rs_blog_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									ORDER BY articles DESC								 
-								";							
+								";
 								
-								$responseblogs = $wpdb->get_results($subsql);																								
-								foreach($responseblogs as $rsb) {							
-									$total += $rsb->articles;								
+								$responseblogs = $wpdb->get_results($subsql);
+								foreach($responseblogs as $rsb) {
+									$total += $rsb->articles;
 									$html.="
-									<tr>												
-										<td>$rsb->blogname</td>									
+									<tr>
+										<td>$rsb->blogname</td>
 										<td><a href='".$url."' target='_blank'>$url</a></td>
-										<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->blog_id."','".$start_date."','".$final_date."', 'blogs')\">$rsb->articles</a></td>													
+										<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->blog_id."','".$start_date."','".$final_date."', 'blogs')\">$rsb->articles</a></td>
 										<td align='center'>$rsb->comments</td>
 										<td>".normalize_dates($rs->registered)."</td>
 										<td>".normalize_dates($rs->last_updated)."</td>
 									</tr>";	
 								}
-							} else {						
-								$subsql = 
-								"
-									SELECT COUNT($comments_tablename.comment_ID) as comments, $options_tablename.option_value as blogname, 
-									(SELECT COUNT(wp_posts.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND wp_posts.post_status = 'publish' 
+							} else {
+								$subsql = "SELECT COUNT($comments_tablename.comment_ID) as comments, $options_tablename.option_value as blogname, 
+									(SELECT COUNT(wp_posts.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND $posts_tablename.post_status = 'publish' 
 									AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59') as articles
 									FROM $options_tablename, $comments_tablename 
 									WHERE wp_options.option_name = 'blogname' AND wp_comments.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									ORDER BY articles DESC	
 								";
-																
-								$responseblogs = $wpdb->get_results($subsql);																
-								foreach($responseblogs as $rsb) {							
-									$total += $rsb->articles;																
+								$responseblogs = $wpdb->get_results($subsql);
+								foreach($responseblogs as $rsb) {
+									$total += $rsb->articles;
 									$html.="
-									<tr>												
+									<tr>
 										<td>$rsb->blogname</td>
 										<td><a href='".$url."' target='_blank'>$url</a></td>
 										<td align='center'><a href='#' onclick=\"javascript:detailed_publications('".$rs->blog_id."','".$start_date."','".$final_date."', 'blogs')\">$rsb->articles</a></td>
@@ -322,24 +315,24 @@
 				} else {
 					$sql = "SELECT $users_tablename.ID, $users_tablename.display_name, $users_tablename.user_registered, $users_tablename.user_email FROM $users_tablename";
 					$response = $wpdb->get_results($sql);
-					$records = sizeof($response);								        
+					$records = sizeof($response);
 					if($response){
 						
 						$query = true;
-						paginateResults(2,1,$records);
 						
 						$html.= "
+						<input type='hidden' data-a='2' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 							<tr>
 								<th>$user_avatar</th>
 								<th>$username</th>
 								<th>$number_of_posts</th>
-								<th>$registered_from</th>																							
+								<th>$registered_from</th>
 							</tr>
 							</thead>
 							<tbody>
-						";					
+						";
 						$users = array();
-						$pos=0;															
+						$pos=0;
 						
 						foreach ($response as $rs) {
 							
@@ -355,16 +348,17 @@
 								AND $posts_tablename.post_status = 'publish'
 								AND $posts_tablename.post_type = 'post'
 								AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
-							";																																				
-							$responseco = $wpdb->get_results($subsql);																																
-							foreach ($responseco as $rscom){									
+							";
+							$responseco = $wpdb->get_results($subsql);
+							foreach ($responseco as $rscom){
 								$users[$pos]['Posts'] += $rscom->posts;
 							}
 							$pos++;
 						}
 						for($i=0; $i<sizeof($users); $i++){
+						if ( $users[$i]['Posts'] == 0 ) continue;
 							$html.="
-								<tr>																							
+								<tr>
 									<td class='avatar' align='center'>".get_avatar( $users[$i]['email'], 24 )."</td>
 									<td>".$users[$i]['UserName']."</td>
 									<td align='center'>".$users[$i]['Posts']."</td>
@@ -389,24 +383,24 @@
 				if($response){
 					
 					$query = true;
-					paginateResults(2,1,$records);
 					
 					$html.= "
+						<input type='hidden' data-a='2' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
 						<tr>
 							<th>$user_avatar</th>
 							<th>$username</th>												
 							<th>$number_of_comments</th>
-							<th>$registered_from</th>																							
+							<th>$registered_from</th>
 						</tr>
 						</thead>
 						<tbody>
-					";					
+					";
 					$users = array();
-					$pos=0;															
+					$pos=0;
 					
 					foreach ($response as $rs) {
 						
-						$users[$pos]['UserName'] = $rs->display_name;	
+						$users[$pos]['UserName'] = $rs->display_name;
 						$users[$pos]['RegisteredDate'] = $rs->user_registered;
 						$users[$pos]['email'] = $rs->user_email;
 						$users[$pos]['Comments'] = 0;
@@ -432,8 +426,8 @@
 										AND $rsb_blog_comments_tablename.comment_approved = 1
 										AND $rsb_blog_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									";
-																																				
-								} else {						
+
+								} else {
 									$subsql = "
 										SELECT COUNT($comments_tablename.comment_ID) as comments 
 										FROM $comments_tablename, $users_tablename 
@@ -441,10 +435,10 @@
 										AND $comments_tablename.user_id = ".$rs->ID."
 										AND $comments_tablename.comment_approved = 1
 										AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
-									";																																				
+									";
 								}
 								
-								$responseco = $wpdb->get_results($subsql);																																
+								$responseco = $wpdb->get_results($subsql);
 								foreach ($responseco as $rscom){									
 									$users[$pos]['Comments'] += $rscom->comments;
 								}
@@ -457,73 +451,72 @@
 								AND $comments_tablename.user_id = ".$rs->ID."
 								AND $comments_tablename.comment_approved = 1
 								AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
-							";																																				
-							$responseco = $wpdb->get_results($subsql);																																
-							foreach ($responseco as $rscom){									
+							";
+							$responseco = $wpdb->get_results($subsql);
+							foreach ($responseco as $rscom){
 								$users[$pos]['Comments'] += $rscom->comments;
 							}
 						}
 						$pos++;
-					}																																								
-														
+					}
 					for($i=0; $i<sizeof($users); $i++){
+						if ( $users[$i]['Comments'] == 0 ) continue;
 						$html.="
-							<tr>																							
+							<tr>
 								<td class='avatar' align='center'>".get_avatar( $users[$i]['email'], 24 )."</td>
-								<td>".$users[$i]['UserName']."</td>												
+								<td>".$users[$i]['UserName']."</td>
 								<td align='center'>".$users[$i]['Comments']."</td>
-								<td>".normalize_dates($users[$i]['RegisteredDate'])."</td>											
+								<td>".normalize_dates($users[$i]['RegisteredDate'])."</td>
 							</tr>
 						";
-						$total+=$users[$i]['Comments'];												
+						$total+=$users[$i]['Comments'];
 					}
 				} else {
 					echo "<h3><strong>" . $no_records . "</strong></h3>";
-				}				
-			break;	
+				}
+			break;
 			
-			case 'friendship':				
+			case 'friendship':
 				$sql = "
 					SELECT $users_tablename.display_name, $users_tablename.user_registered, $usermeta_tablename.meta_value, $users_tablename.user_email
 					FROM $users_tablename, $usermeta_tablename
 					WHERE $users_tablename.ID = $usermeta_tablename.user_id
 					AND $usermeta_tablename.meta_key = 'total_friend_count'
-					ORDER BY $usermeta_tablename.meta_value DESC					
+					ORDER BY $usermeta_tablename.meta_value DESC
 				";
-					   					        
-				$response = $wpdb->get_results($sql);
-				$records = sizeof($response);								        
 				
-				if($response){							
+				$response = $wpdb->get_results($sql);
+				$records = sizeof($response);
+				if($response){
 					$query = true;
-					paginateResults(3,1,$records);					
 					$html.= "
-					<tr>
-						<th>$user_avatar</th>
-						<th>$username</th>												
-						<th>$email</th>
-						<th>$number_of_friends</th>
-						<th>$registered_from</th>																							
-					</tr>
-					</thead>
-					<tbody>";																																																																																								
+						<input type='hidden' data-a='3' data-b='1' data-records='$records' id='bpcs-pagination-data'/>
+						<tr>
+							<th>$user_avatar</th>
+							<th>$username</th>
+							<th>$email</th>
+							<th>$number_of_friends</th>
+							<th>$registered_from</th>
+						</tr>
+						</thead>
+						<tbody>";
 					
 					foreach ($response as $rs) {	
-						$profile = get_bloginfo('home')."/members/".$rs->display_name."/";																																																																																																																							
+						$profile = get_bloginfo('url')."/members/".$rs->display_name."/";
 						$html.="
-							<tr>																							
+							<tr>
 								<td class='avatar' align='center'>".get_avatar( $rs->user_email, 24 )."</td>
 								<td><a href=".$profile." target='_blank'>$rs->display_name</a></td>
 								<td>$rs->user_email</td>
 								<td align='center'>$rs->meta_value</td>
-								<td>".normalize_dates($rs->user_registered)."</td>											
+								<td>".normalize_dates($rs->user_registered)."</td>
 							</tr>
-						";																					
-					}																																																																																																																																
+						";
+					}
 				} else {
 					echo "<h3><strong>" . $no_records . "</strong></h3>";								
-				}				 
-			break;						
+				}
+			break;
 		}
 				
 		if($component != 'friendship'){
@@ -532,49 +525,50 @@
 					<tr>
 						<td><i style='float:left; width:100%;'>Total publications on <span class='component'>$component </span> $component_text: $total</i></td>
 					</tr>
-					</table>			
+					</table>
 				</tbody>
-				</table>					
+				</table>
 			";
 		} else {
-			$html.="								
+			$html.="
 				</tbody>
-				</table>					
-			";		
+				</table>
+			";
 		}
 		
-		echo $html;														
-		if(isset($query)){									
+		echo $html;
+		if(isset($query)){
 			$paramspdf = get_bloginfo('url') . '/' . PLUGINDIR . '/' . dirname(plugin_basename(__FILE__))."/template/pdf.php?type=$component&start_date=$start_date&final_date=$final_date";
-			$paramsxls = get_bloginfo('url') . '/' . PLUGINDIR . '/' . dirname(plugin_basename(__FILE__))."/template/xls.php?type=$component&start_date=$start_date&final_date=$final_date";											
+			$paramsxls = get_bloginfo('url') . '/' . PLUGINDIR . '/' . dirname(plugin_basename(__FILE__))."/template/xls.php?type=$component&start_date=$start_date&final_date=$final_date";
 			echo "<div id='export'>
 				<div id='btnexport'>
 					<div id='openexport'>
 						<a href='#' id='clicExportar' onclick='javascript:return false;'>Export</a>
-					</div>					
+					</div>
 				</div>
 				<div id='formats'>
-					<div id='pdf'>																
+					<div id='pdf'>
 						<a href='".$paramspdf."' id='hrefpdf' target='_blank'>PDF</a>
-					</div>					
+					</div>
 					<div id='xls'>
 						<a href='".$paramsxls."' id='hrefpdf' target='_blank'>XLS</a>
 					</div>
 				</div>
 			</div>";
 		}
-		die();																 																			
+		die();
 	}
 		
 	/* call action to display detailde results */
 	add_action('wp_ajax_component_detailed_stats', 'get_component_detailed_stats');
 
 	function get_component_detailed_stats() {
+		wp_verify_nonce( $_POST['security'], 'bpcs-nonce');
 		global $wpdb;		
 		$user_id = sanitize_text_field( $_POST['user_id'] );
 		$start_date = sanitize_text_field( $_POST['start_date'] );
 		$final_date = sanitize_text_field( $_POST['final_date'] );		
-		$component = sanitize_text_field( $_POST['component'] );												
+		$component = sanitize_text_field( $_POST['component'] );
 		$activity_tablename = $wpdb->prefix . 'bp_activity';
 		$blogs_tablename = $wpdb->prefix . 'blogs';
 		$comments_tablename = $wpdb->prefix . 'comments';
@@ -603,7 +597,7 @@
 		$and = sanitize_text_field( __( 'and', 'buddypress-component-stats' ) );
 		$number_of_groups = sanitize_text_field( __( 'Number of Groups Involved', 'buddypress-component-stats' ) );
 		$involved_groups = sanitize_text_field( __( 'Involved Groups Name', 'buddypress-component-stats' ) );
-		$blogname = sanitize_text_field( __( 'Blogname', 'buddypress-component-stats' ) );						
+		$blogname = sanitize_text_field( __( 'Blogname', 'buddypress-component-stats' ) );
 		$blog_url = sanitize_text_field( __( 'Blog URL', 'buddypress-component-stats' ) );
 		$number_of_articles = sanitize_text_field( __( 'Number of Articles Published', 'buddypress-component-stats' ) );
 		$number_of_comments = sanitize_text_field( __( 'Number of Comments', 'buddypress-component-stats' ) ); 
@@ -625,7 +619,7 @@
 		$records_found_for_blog = sanitize_text_field( __( 'Records found for the articles of the blog', 'buddypress-component-stats' ) );
 		$comment_author_text = sanitize_text_field( __( 'Comment Author', 'buddypress-component-stats' ) );
 		switch($component){		
-		case 'activity':						
+		case 'activity':
 			$sql = "
 				SELECT $activity_tablename.content, $users_tablename.display_name, $activity_tablename.date_recorded
 				FROM $activity_tablename, $users_tablename
@@ -637,33 +631,33 @@
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);
 			
-			if($response){				
-				$html = "<br/>													
+			if($response){
+				$html = "<br/>
 					<table width='100%' id='tabladetalle'>
 					<thead>
-					<tr>								
+					<tr>
 						<th width='70%'>$content_text</th>
-						<th width='30%'>$date_text</th>				
+						<th width='30%'>$date_text</th>
 					</tr>
 					</thead>
 					<tbody>
 				";
 				
-				foreach ( $response as $rs ) {																																																																																																																																				
-					$html.="																									
+				foreach ( $response as $rs ) {
+					$html.="
 					<tr>
 						<td width='70%'>$rs->content</td>
 						<td width='30%' align='right'>".normalize_dates($rs->date_recorded)."</td>
 					</tr>";
 				}
 				
-				$html.="							
+				$html.="
 					</tbody>
 					</table>
 					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
-					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>
 				";
-			}			
+			}
 		break;
 		
 		case 'groups':
@@ -673,13 +667,13 @@
 				WHERE $users_tablename.ID = $activity_tablename.user_id AND component = 'groups' AND type = 'activity_update' AND date_recorded BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				AND $users_tablename.ID = '".$user_id."' AND $groups_tablename.id = $activity_tablename.item_id	
 				ORDER BY $activity_tablename.date_recorded DESC
-			"; 				      					        
+			";
 			
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);
 			if($response){
 				
-				$html = "<br/>													
+				$html = "<br/>
 				<table width='100%' id='tabladetalle'>
 				<thead>
 				<tr>
@@ -690,20 +684,20 @@
 				</thead>
 				<tbody>";
 				
-				foreach ( $response as $rs ) {																																																																																		
-					$html.="																									
-					<tr>										
+				foreach ( $response as $rs ) {
+					$html.="
+					<tr>
 						<td width='40%'>$rs->content</td>
 						<td width='30%'>$rs->name</td>
-						<td width='30%' align='right'>".normalize_dates($rs->date_recorded)."</td>									
-					</tr>";											
+						<td width='30%' align='right'>".normalize_dates($rs->date_recorded)."</td>
+					</tr>";
 				}
 				
-				$html.="							
+				$html.="
 					</tbody>
 					</table>
 					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
-					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>
 				";
 			}	
 		break;
@@ -716,20 +710,19 @@
 				BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				AND $users_tablename.ID = '".$user_id."'			
 				ORDER BY $activity_tablename.date_recorded DESC
-			"; 				      					        
-			
+			";
 			$response = $wpdb->get_results($sql);
 			$records = sizeof($response);
 			if($response){
 								
-				$html = "<br/>													
+				$html = "<br/>
 					<table width='100%' id='tabladetalle'>
 					<thead>
-						<tr>								
+						<tr>
 							<th width='40%'>$content_text</th>
 							<th width='20%'>$published_on_forum</th>
 							<th width='20%'>$forum_group</th>
-							<th width='20%'>$date_text</th>				
+							<th width='20%'>$date_text</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -737,7 +730,7 @@
 				
 				foreach ( $response as $rs ) {
 					$subsql = "
-						SELECT $activity_tablename.content, $groups_tablename.name 				
+						SELECT $activity_tablename.content, $groups_tablename.name
 						FROM $activity_tablename, $groups_tablename
 						WHERE $activity_tablename.component = 'groups' AND $activity_tablename.type = 'bbp_topic_create' AND $groups_tablename.id = $activity_tablename.item_id
 						AND $activity_tablename.item_id	= '".$rs->item_id."'
@@ -749,32 +742,32 @@
 							$forum = $rsf->content;
 							$group = $rsf->name;
 						}
-					}																									
+					}
 					
-					$html.="																									
-						<tr>										
+					$html.="
+						<tr>
 							<td width='40%'>$rs->content</td>
 							<td width='20%'>$forum</td>
 							<td width='20%'>$group</td>
-							<td width='20%' align='right'>".normalize_dates($rs->date_recorded)."</td>									
+							<td width='20%' align='right'>".normalize_dates($rs->date_recorded)."</td>
 						</tr>
-					";											
+					";
 				}
-				$html.="							
+				$html.="
 					</tbody>
 					</table>
 					</br><h4>$records_for_user<strong><b>".$rs->display_name."</b></strong> 
-					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>					
+					$between <strong><b>$start_date</b> $and <b>$final_date</b></strong> $on<strong><b> <span class='component'>$component</span> </b></strong>$component_text</h4>
 				";
-			}				
+			}
 		break;
 		
 		case 'blogs':
-			$id_blog = sanitize_text_field( $_POST['user_id'] );																			
-			$html = "<br/>													
+			$id_blog = sanitize_text_field( $_POST['user_id'] );
+			$html = "<br/>
 			<table width='100%' id='tabladetalle'>
 			<thead>
-			<tr>								
+			<tr>
 				<th width='20%'>$article_title</th>
 				<th width='20%'>$publication_date</th>
 				<th width='60%'>
@@ -784,10 +777,10 @@
 							<td width='20%'>$comment_author_text</td> <td width='50%'>$content_text</td> <td width='30%'>Date</td>
 						</tr>
 					</table>
-				</th>											
+				</th>
 			</tr>
 			</thead>
-			<tbody>";													
+			<tbody>";
 			
 			if($id_blog!=1) {
 				$id_posts_tablename = $wpdb->prefix . $id_blog . '_posts';
@@ -798,29 +791,29 @@
 					FROM $id_posts_tablename
 					WHERE $id_posts_tablename.post_status = 'publish' AND $id_posts_tablename.post_type = 'post' AND $id_posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				";					
-				$response = $wpdb->get_results($sql);						
+				$response = $wpdb->get_results($sql);
 				if($response) {																									
-					foreach($response as $rs){													
+					foreach($response as $rs){
 						
 						$subco="
 							SELECT $id_comments_tablename.comment_author, $id_comments_tablename.comment_date, $id_comments_tablename.comment_content
 							FROM $id_posts_tablename, $id_comments_tablename
 							WHERE $id_comments_tablename.comment_post_ID = $id_posts_tablename.ID
 							AND $id_comments_tablename.comment_post_ID = '".$rs->ID."'
-							AND $id_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'																					 
-						";																									
+							AND $id_comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
+						";
 						
-						$html.="																									
-							<tr>										
+						$html.="
+							<tr>
 								<td valign='top' width='20%'>$rs->post_title</td>
 								<td valign='top' width='20%'>".normalize_dates($rs->post_date)."</td>
 								<td valign='top' width='60%'>
-						";													
-						$subresponse = $wpdb->get_results($subco);													
+						";
+						$subresponse = $wpdb->get_results($subco);
 						if ($subresponse) {
-							foreach($subresponse as $rsco){																								
+							foreach($subresponse as $rsco){
 								
-								$html.="																																		
+								$html.="
 									<table width='100%'>
 										<tr>
 											<td valign='top' align='left' width='20%'>$rsco->comment_author</td> 
@@ -831,16 +824,16 @@
 								";	
 							}
 						} else {
-							$html.="																																		
+							$html.="
 								<table width='100%'>
 									<tr>
-										<td colspan='3'>$without_comments</td> 										
+										<td colspan='3'>$without_comments</td>
 									</tr>
 								</table>
 							";
-						}													
+						}
 						$html.="
-								</td>												
+								</td>
 							</tr>
 						";
 					}
@@ -848,7 +841,7 @@
 				
 				$slqblog = "SELECT $id_options_tablename.option_value FROM $id_options_tablename WHERE $id_options_tablename.option_name = 'blogname'";
 				$responseblog = $wpdb->get_results($slqblog);
-				$final_datelog = $responseblog[0]->option_value;					
+				$final_datelog = $responseblog[0]->option_value;
 					
 			} else {
 				$sql="
@@ -856,26 +849,26 @@
 					FROM $posts_tablename
 					WHERE $posts_tablename.post_status = 'publish' AND $posts_tablename.post_type = 'post' AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 				";					
-				$response = $wpdb->get_results($sql);						
-				if($response) {																									
-					foreach($response as $rs){													
+				$response = $wpdb->get_results($sql);
+				if($response) {
+					foreach($response as $rs){
 						$subco="
 							SELECT $comments_tablename.comment_author, $comments_tablename.comment_date, $comments_tablename.comment_content
 							FROM $posts_tablename, $comments_tablename
-							WHERE $comments_tablename.comment_post_ID = $posts_tablename.ID AND $comments_tablename.comment_post_ID = '".$rs->ID."' AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'								 
-						";																			
+							WHERE $comments_tablename.comment_post_ID = $posts_tablename.ID AND $comments_tablename.comment_post_ID = '".$rs->ID."' AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
+						";
 						
-						$html.="																									
-							<tr>										
+						$html.="
+							<tr>
 								<td valign='top' width='20%'>$rs->post_title</td>
 								<td valign='top' width='20%'>".normalize_dates($rs->post_date)."</td>
 								<td valign='top' width='60%'>
-						";													
-						$subresponse = $wpdb->get_results($subco);													
+						";
+						$subresponse = $wpdb->get_results($subco);
 						if ($subresponse) {
-							foreach($subresponse as $rsco){																
+							foreach($subresponse as $rsco){
 								
-								$html.="																																		
+								$html.="
 									<table width='100%'>
 										<tr>
 											<td valign='top' align='left' width='20%'>$rsco->comment_author</td> 
@@ -886,78 +879,49 @@
 								";	
 							}
 						} else {
-							$html.="																																		
+							$html.="
 									<table width='100%'>
 										<tr>
 											<td colspan='3'>$without_comments</td>
 										</tr>
 									</table>
 								";
-						}													
+						}
 						$html.="
-								</td>																	
+								</td>
 							</tr>
-						";														
+						";
 					}
 				}
 				$slqblog = "SELECT $options_tablename.option_value FROM $options_tablename WHERE $options_tablename.option_name = 'blogname'";
 				$responseblog = $wpdb->get_results($slqblog);
-				$final_datelog = $responseblog[0]->option_value;								
-			}																					      					        												
-		$html.="							
+				$final_datelog = $responseblog[0]->option_value;
+			}
+		$html.="
 			</tbody>
 			</table>
 			<br/><h4>$records_found_for_blog <span class='component'>$final_datelog</span> $between <strong><b>$start_date</b> $and <b>$final_date</b></strong></h4>					
-		";							
-		break;				
+		";
+		break;
 		}
 				
 		echo $html;
 		die();
 	}
 		
-	/* Fucntion to paginate results using javascript */
-	function paginateResults($a,$b,$records) {
-	?>
-		<script type="text/javascript" language="javascript">
-			jQuery("#myTable").tablesorter({         
-				sortList: [[<?php echo $a; ?>, <?php echo $b; ?>]] 
-			});			
-			jQuery('#green').smartpaginator({ 				
-				totalrecords: <?php echo $records; ?>,
-				recordsperpage: 25, 
-				datacontainer: 'myTable', 
-				initval:0,
-				length: 10,
-				dataelement: 'tr',								
-				next: 'Next', 
-				prev: 'Prev', 
-				first: 'First', 
-				last: 'Last',
-				display: 'single',
-				theme: 'green' 				
-			});
-			
-			jQuery('#btnexport').click(function(){
-				jQuery('#formats').toggle();
-			}); 									       		
-		</script>
-    <?php
-	}
 		
-	/* Function to normalize dates to format Day of week, Month-00 of year hour-am/pm */				
-	function normalize_dates($dates){								
+	/* Function to normalize dates to format Day of week, Month-00 of year hour-am/pm */
+	function normalize_dates($dates){
 		$timezone = get_option('timezone_string');
 		date_default_timezone_set($timezone);
 		$data = explode(" ", $dates);
 		$date = explode("-", $data[0]);
-		$hour = explode(":", $data[1]);						
-		$time = mktime($hour[0], $hour[1], $hour[2], $date[1], $date[2], $date[0]);												
-		$returndate = ucfirst(strftime("%A", $time)).", ".ucfirst(strftime("%B",$time))."-".strftime("%d of %Y %I:%M", $time)."-".date("a");																				
-		$returndate = utf8_encode($returndate);		
+		$hour = explode(":", $data[1]);
+		$time = mktime($hour[0], $hour[1], $hour[2], $date[1], $date[2], $date[0]);
+		$returndate = ucfirst(strftime("%A", $time)).", ".ucfirst(strftime("%B",$time))."-".strftime("%d of %Y %I:%M", $time)."-".date("a");
+		$returndate = utf8_encode($returndate);
 		return $returndate;
 	}
-																																																																													
 	/* enqueue scripts and styles */		
 	function my_admin_init() {
 		/* $pluginfolder = get_bloginfo('url') . '/' . PLUGINDIR . '/' . dirname(plugin_basename(__FILE__)); */
@@ -970,16 +934,12 @@
 		wp_enqueue_script('jquery-ui-tabs', $pluginfolder . '/template/js/ui.tabs.min.js');	
 		wp_enqueue_script('jquery-ui-datepicker', $pluginfolder . '/template/js/ui.datepicker.min.js');		
 		wp_enqueue_script('jquery-paginator', $pluginfolder . '/template/js/smartpaginator.js');
-		wp_enqueue_script('jquery-table-sorter', $pluginfolder . '/template/js/jquery.tablesorter.js');												
+		wp_enqueue_script('jquery-table-sorter', $pluginfolder . '/template/js/jquery.tablesorter.js');
+		wp_enqueue_script('buddypress-component-stats-admin', $pluginfolder . '/js/buddypress-component-stats-admin.js');
 		load_textdomain( 'buddypress-component-stats', dirname( __FILE__ ) . '/languages/' );
+		wp_localize_script( 'buddypress-component-stats', 'ajax_object', array( 'ajaxurl' => admin_url( 'admin-ajax.php'), 'check_nonce' => wp_create_nonce('bpcs-nonce') ) );
 	}
 	
-	/* enqueue admin scripts */
-	function bpcs_admin_enqueue_scripts() {
-		$pluginfolder = WP_PLUGIN_URL . '/' .dirname(plugin_basename(__FILE__));
-		wp_enqueue_script('buddypress-component-stats-admin', $pluginfolder . '/js/buddypress-component-stats-admin.js');												
-	}
-
 	/* function que es llamada al dar click en el menu insertado en la barra de opciones de administracion de wordpress */
 	function stats_panel(){	 
 	  include('template/stats_panel.php');
@@ -987,7 +947,7 @@
 			
 	/* Crear un vinculo para el plugin en la pestaña Herramientas de wordpress */
 	function buddypress_component_stats_add_menu(){   
-	  add_menu_page('BuddyPress Component Stats', 'BuddyPress Component Stats', 'manage_options', 'buddypress-component-stats', 'stats_panel', plugin_dir_url( __FILE__ ).'/template/images/stats.png');	  
+	  add_menu_page('BuddyPress Component Stats', 'BuddyPress Component Stats', 'manage_options', 'buddypress-component-stats', 'stats_panel', plugin_dir_url( __FILE__ ).'/template/images/stats.png');
 	}
 		
 	/* funcion que es llamda al desinstalar el plugin */
@@ -995,6 +955,6 @@
 	}
 	
 	/* funcion que es llamda al instalar el plugin */
-	function stasts_desinstall(){	   
-	}																			
+	function stats_desinstall(){
+	}
 ?>
