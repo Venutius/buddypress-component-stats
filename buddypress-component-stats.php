@@ -2,7 +2,7 @@
 /*
   Plugin Name: Buddypress Component Stats
   Description: This plugin produce obtain statistics about the users who interact in the social network based on the various activity updates covering the component being queried. Covers the main components of buddypress (Forums, Groups, Blogs, Comments, Activity, Friends) showing results on the most active in each of these components.
-  Version: 2.1.0
+  Version: 2.2.0
   Author: venutius
   Text Domain: buddypress-component-stats
 */
