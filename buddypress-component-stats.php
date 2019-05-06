@@ -75,8 +75,15 @@
 		$posts_tablename = $wpdb->prefix . 'posts';
 		$options_tablename = $wpdb->prefix . 'options';
 		$users_tablename = $wpdb->prefix . 'users';
-		$usermeta_tablename = $wpdb->prefix . 'usermeta';
-		$users_tablename = $wpdb->prefix . 'users';
+		if ( is_multisite() ) {
+			$usermeta_tablename = $wpdb->base_prefix . 'usermeta';
+			$users_tablename = $wpdb->base_prefix . 'users';
+			$blogs_tablename = $wpdb->base_prefix . 'blogs';
+		} else {
+			$usermeta_tablename = $wpdb->prefix . 'usermeta';
+			$users_tablename = $wpdb->prefix . 'users';
+			$blogs_tablename = $wpdb->prefix . 'blogs';
+		}
 		switch($component){
 			case 'activity':
 				$sql = "
@@ -258,9 +265,9 @@
 						foreach ($response as $rs) {
 							$url = 'http://'.$rs->domain.$rs->path;
 							if($rs->blog_id != 1) {	
-								$rs_blog_options_tablename = $wpdb->prefix . $rs->blog_id . '_options';
-								$rs_blog_posts_tablename = $wpdb->prefix . $rs->blog_id . '_posts';
-								$rs_blog_comments_tablename = $wpdb->prefix . $rs->blog_id . '_comments';
+								$rs_blog_options_tablename = $wpdb->base_prefix . $rs->blog_id . '_options';
+								$rs_blog_posts_tablename = $wpdb->base_prefix . $rs->blog_id . '_posts';
+								$rs_blog_comments_tablename = $wpdb->base_prefix . $rs->blog_id . '_comments';
 								
 								$subsql = 
 								"
@@ -288,10 +295,10 @@
 								}
 							} else {
 								$subsql = "SELECT COUNT($comments_tablename.comment_ID) as comments, $options_tablename.option_value as blogname, 
-									(SELECT COUNT(wp_posts.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND $posts_tablename.post_status = 'publish' 
+									(SELECT COUNT($posts_tablename.ID) FROM $posts_tablename WHERE $posts_tablename.post_type = 'post' AND $posts_tablename.post_status = 'publish' 
 									AND $posts_tablename.post_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59') as articles
 									FROM $options_tablename, $comments_tablename 
-									WHERE wp_options.option_name = 'blogname' AND wp_comments.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
+									WHERE $options_tablename.option_name = 'blogname' AND $comments_tablename.comment_date BETWEEN '$start_date 00:00:00' AND '$final_date 23:59:59'
 									ORDER BY articles DESC	
 								";
 								$responseblogs = $wpdb->get_results($subsql);
@@ -414,10 +421,10 @@
 							foreach($responseblogs as $rsblog){
 						
 								if($rsblog->blog_id != 1) {
-									$rsb_blog_options_tablename = $wpdb->prefix . $rsblog->blog_id . '_options';
-									$rsb_blog_posts_tablename = $wpdb->prefix . $rsblog->blog_id . '_posts';
-									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
-									$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
+									$rsb_blog_options_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_options';
+									$rsb_blog_posts_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_posts';
+									$rsb_blog_comments_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_comments';
+									$rsb_blog_comments_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_comments';
 									$subsql = "
 										SELECT COUNT($comments_tablename.comment_ID) as comments
 										FROM $rsb_blog_comments_tablename, $users_tablename 
@@ -576,7 +583,13 @@
 		$groups_members_tablename = $wpdb->prefix . 'bp_groups_members';
 		$posts_tablename = $wpdb->prefix . 'posts';
 		$options_tablename = $wpdb->prefix . 'options';
-		$users_tablename = $wpdb->prefix . 'users';
+		if ( is_multisite() ) {
+			$users_tablename = $wpdb->base_prefix . 'users';
+			$blogs_tablename = $wpdb->base_prefix . 'blogs';
+		} else {
+			$users_tablename = $wpdb->prefix . 'users';
+			$blogs_tablename = $wpdb->prefix . 'blogs';
+		}
 		$usermeta_tablename = $wpdb->prefix . 'usermeta';
 		$users_tablename = $wpdb->prefix . 'users';
 		$html = '';
@@ -783,9 +796,9 @@
 			<tbody>";
 			
 			if($id_blog!=1) {
-				$id_posts_tablename = $wpdb->prefix . $id_blog . '_posts';
-				$id_options_tablename = $wpdb->prefix . $id_blog . '_options';
-				$id_comments_tablename = $wpdb->prefix . $id_blog . '_comments';
+				$id_posts_tablename = $wpdb->base_prefix . $id_blog . '_posts';
+				$id_options_tablename = $wpdb->base_prefix . $id_blog . '_options';
+				$id_comments_tablename = $wpdb->base_prefix . $id_blog . '_comments';
 				 $sql="
 					SELECT $id_posts_tablename.post_title, $id_posts_tablename.post_date, $id_posts_tablename.ID
 					FROM $id_posts_tablename
@@ -937,7 +950,7 @@
 		wp_enqueue_script('jquery-table-sorter', $pluginfolder . '/template/js/jquery.tablesorter.js');
 		wp_enqueue_script('buddypress-component-stats-admin', $pluginfolder . '/js/buddypress-component-stats-admin.js');
 		load_textdomain( 'buddypress-component-stats', dirname( __FILE__ ) . '/languages/' );
-		wp_localize_script( 'buddypress-component-stats', 'ajax_object', array( 'ajaxurl' => admin_url( 'admin-ajax.php'), 'check_nonce' => wp_create_nonce('bpcs-nonce') ) );
+		wp_localize_script( 'buddypress-component-stats-admin', 'ajax_object', array( 'ajaxurl' => admin_url( 'admin-ajax.php'), 'check_nonce' => wp_create_nonce('bpcs-nonce') ) );
 	}
 	
 	/* function que es llamada al dar click en el menu insertado en la barra de opciones de administracion de wordpress */

@@ -252,15 +252,20 @@
 	";		
 	global $wpdb;
 	$activity_tablename = $wpdb->prefix . 'bp_activity';
-	$blogs_tablename = $wpdb->prefix . 'blogs';
 	$comments_tablename = $wpdb->prefix . 'comments';
 	$groups_tablename = $wpdb->prefix . 'bp_groups';
 	$groups_members_tablename = $wpdb->prefix . 'bp_groups_members';
 	$posts_tablename = $wpdb->prefix . 'posts';
 	$options_tablename = $wpdb->prefix . 'options';
-	$users_tablename = $wpdb->prefix . 'users';
-	$usermeta_tablename = $wpdb->prefix . 'usermeta';
-	$users_tablename = $wpdb->prefix . 'users';
+	if ( is_multisite() ) {
+		$usermeta_tablename = $wpdb->base_prefix . 'usermeta';
+		$users_tablename = $wpdb->base_prefix . 'users';
+		$blogs_tablename = $wpdb->base_prefix . 'blogs';
+	} else {
+		$usermeta_tablename = $wpdb->prefix . 'usermeta';
+		$users_tablename = $wpdb->prefix . 'users';
+		$blogs_tablename = $wpdb->prefix . 'blogs';
+	}
 	$user_avatar = sanitize_text_field( __( 'User Avatar', 'buddypress-component-stats' ) );
 	$user = sanitize_text_field( __( 'User', 'buddypress-component-stats' ) );
 	$number_of_publications = sanitize_text_field( __( 'Number of Publications', 'buddypress-component-stats' ) );
@@ -434,9 +439,9 @@
 					foreach ($response as $rs) {
 						$url = 'http://'.$rs->domain.$rs->path;						
 						if($rs->blog_id != 1) {								
-							$rs_blog_options_tablename = $wpdb->prefix . $rs->blog_id . '_options';
-							$rs_blog_posts_tablename = $wpdb->prefix . $rs->blog_id . '_posts';
-							$rs_blog_comments_tablename = $wpdb->prefix . $rs->blog_id . '_comments';
+							$rs_blog_options_tablename = $wpdb->base_prefix . $rs->blog_id . '_options';
+							$rs_blog_posts_tablename = $wpdb->base_prefix . $rs->blog_id . '_posts';
+							$rs_blog_comments_tablename = $wpdb->base_prefix . $rs->blog_id . '_comments';
 							$subsql = 
 							"
 								SELECT COUNT($rs_blog_comments_tablename.comment_ID) as comments, $rs_blog_options_tablename.option_value as blogname, 
@@ -576,9 +581,9 @@
 					if ( isset( $responseblogs ) ) {
 						foreach($responseblogs as $rsblog){
 							if($rsblog->blog_id != 1) {								
-								$rsb_blog_options_tablename = $wpdb->prefix . $rsblog->blog_id . '_options';
-								$rsb_blog_posts_tablename = $wpdb->prefix . $rsblog->blog_id . '_posts';
-								$rsb_blog_comments_tablename = $wpdb->prefix . $rsblog->blog_id . '_comments';
+								$rsb_blog_options_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_options';
+								$rsb_blog_posts_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_posts';
+								$rsb_blog_comments_tablename = $wpdb->base_prefix . $rsblog->blog_id . '_comments';
 								$subsql = "
 									SELECT COUNT(user_id) as comments
 									FROM $rsb_blog_comment_tablename, $users_tablename 

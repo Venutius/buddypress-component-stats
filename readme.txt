@@ -36,7 +36,7 @@ This plugin allows you to run Database reports covering the various BuddyPress c
 
 * 27/03/2019
 
-* Fix: XLS and PDF Exported enabled for all components.
+* Fix: XLS and PDF Exports enabled for all components.
 
 = 2.1.0 =
 
@@ -56,6 +56,8 @@ This plugin allows you to run Database reports covering the various BuddyPress c
 = 2.0.0 =
 
 * New: Extensive refactoring and major rewrite.
+* Plugin support transferred to Venutius
+
 
 = 1.0 =
 2012-03-10 update a readme.txt
@@ -67,5 +69,3 @@ This plugin allows you to run Database reports covering the various BuddyPress c
 2012-03-10 update a screenshot-1.jpg
 
 == Upgrade Notice ==
-= 1.0 =
-2012-07-31 Menu plugin formatting not loading properly under IE when admin page is SSL Encrypted. Thanks to RobertLask to fix it!.

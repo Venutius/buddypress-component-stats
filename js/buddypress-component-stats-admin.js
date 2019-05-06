@@ -72,7 +72,7 @@ function ValidateForm() {
 		}
 	} else {
 		
-}
+	}
 	
 	jQuery("#green").hide();		
 	jQuery("#detailed_results").hide();
